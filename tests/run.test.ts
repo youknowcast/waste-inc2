@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { MAX_JOKERS, START_MONEY } from '../src/game/constants';
 import {
   addJoker,
   advanceBlind,
@@ -10,7 +11,6 @@ import {
   startRun,
   toggleSelect,
 } from '../src/game/run';
-import { HAND_SIZE, MAX_JOKERS, START_MONEY } from '../src/game/constants';
 
 describe('payoutFor', () => {
   it('報酬 + 残り手札 × 1 + 利息（所持金5万円ごとに1万円、上限5万円）', () => {

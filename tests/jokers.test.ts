@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { JOKERS, jokerDef } from '../src/data/jokers';
 import { evaluateHand, scoringCards } from '../src/game/hands';
-import { NO_BOSS, scorePlay } from '../src/game/score';
-import type { ScoreAcc } from '../src/game/score';
+import { NO_BOSS, type ScoreAcc, scorePlay } from '../src/game/score';
 import type { Card, JokerInstance, Rank, Suit } from '../src/game/types';
 
 const c = (suit: Suit, ...ranks: Rank[]): Card[] =>

@@ -1,5 +1,6 @@
 import { rankValue } from './cards.ts';
 import { HAND_LABEL, HAND_TABLE } from './hands.ts';
+import { applyScoreJokers } from './jokers.ts';
 import type { Card, HandType, JokerInstance, Suit } from './types.ts';
 
 export type BossRules = {
@@ -62,7 +63,7 @@ export type ScoreBreakdown = {
   lines: ScoreLine[];
 };
 
-export function scorePlay(ctx: ScoreContext, _env: ScoreEnv): ScoreBreakdown {
+export function scorePlay(ctx: ScoreContext, env: ScoreEnv): ScoreBreakdown {
   const acc: ScoreAcc = {
     weightAdd: 0,
     xWeight: 1,
@@ -79,7 +80,7 @@ export function scorePlay(ctx: ScoreContext, _env: ScoreEnv): ScoreBreakdown {
     HAND_TABLE[ctx.handType].baseMult * ctx.boss.baseMultMultiplier,
   );
 
-  // Task 4 will insert the joker loop here.
+  applyScoreJokers(ctx, env, acc);
 
   const weight = Math.floor(
     (baseWeight + cardWeight + acc.weightAdd) * acc.xWeight,
@@ -91,6 +92,7 @@ export function scorePlay(ctx: ScoreContext, _env: ScoreEnv): ScoreBreakdown {
     { label: HAND_LABEL[ctx.handType], kind: 'weight', value: baseWeight },
     { label: '搬入物', kind: 'weight', value: cardWeight },
     { label: HAND_LABEL[ctx.handType], kind: 'mult', value: baseMult },
+    ...acc.lines,
   ];
 
   if (acc.weightAdd !== 0) {

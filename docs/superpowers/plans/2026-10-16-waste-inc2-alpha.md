@@ -21,7 +21,8 @@
 - 同じジョーカーを **複数所持できる**（プールは減らない）。同一ショップ内での重複だけ防ぐ
 - 画面に出す文言はすべて日本語。品目名・ジョーカー名・役の呼称は spec の表のとおりに書く
 - 画像アセットを追加しない（絵文字と CSS のみ）。音源ファイルを追加しない
-- コミットは Conventional Commits（`feat:` / `test:` / `chore:` / `docs:`）
+- **コミットは小さく刻む。** テストが緑になった単位でコミットする（1タスク = 1コミットにしない）。赤いテストを残したままコミットしない
+- コミットは Conventional Commits（`feat:` / `test:` / `chore:` / `docs:`）。型は英語、要約は日本語でよい
 
 ## Review Focus
 
@@ -159,11 +160,17 @@ Run: `npm test -- tests/cards.test.ts` → FAIL を確認。
 Run: `npm test && npm run lint && npm run typecheck && npm run build`
 Expected: すべて成功
 
-- [ ] **Step 9: コミット**
+- [ ] **Step 9: コミット（3回に分ける）**
 
 ```bash
-git add -A
-git commit -m "feat: add toolchain, seeded rng, and the 52-item deck"
+git add package.json package-lock.json tsconfig.json vite.config.ts biome.json index.html src/main.ts src/ui/style.css .gitignore
+git commit -m "chore: vite + typescript + vitest + biome を入れる"
+
+git add src/game/types.ts src/game/constants.ts src/game/rng.ts tests/rng.test.ts
+git commit -m "feat: 共有の型と、シード可能な PRNG を足す"
+
+git add src/game/cards.ts src/data/items.ts tests/cards.test.ts
+git commit -m "feat: 52品目のデッキを足す"
 ```
 
 ---
@@ -248,7 +255,7 @@ Expected: PASS
 
 ```bash
 git add -A
-git commit -m "feat: add hand evaluation for the ten 積載パターン"
+git commit -m "feat: 10の積載パターンを判定する"
 ```
 
 ---
@@ -265,6 +272,7 @@ git commit -m "feat: add hand evaluation for the ten 積載パターン"
   - `type BossRules = { debuffedSuits: Suit[]; baseMultMultiplier: number; handSizeMod: number }`
   - `const NO_BOSS: BossRules = { debuffedSuits: [], baseMultMultiplier: 1, handSizeMod: 0 }`
   - `type ScoreEnv = { jokers: JokerInstance[] }`
+  - `type JokerRunView = { money: number; day: number; blindIndex: number; jokers: JokerInstance[] }` — ジョーカーがラン側から読むための最小限のビュー。`RunState`（Task 7）はこれを構造的に満たすので、そのまま渡せる
   - `type ScoreContext = { handType: HandType; played: Card[]; scoring: Card[]; remainingHands: number; remainingDiscards: number; boss: BossRules }`
   - `type ScoreLine = { label: string; kind: 'weight' | 'mult'; value: number }`
   - `type ScoreAcc = { weightAdd: number; xWeight: number; multAdd: number; xMult: number; lines: ScoreLine[] }`
@@ -337,7 +345,7 @@ Run: `npm test -- tests/score.test.ts` → PASS
 
 ```bash
 git add -A
-git commit -m "feat: add scoring (重さ × 単価 = 売上) without jokers"
+git commit -m "feat: 重さ × 単価 = 売上 の採点を足す（ジョーカー抜き）"
 ```
 
 ---
@@ -350,10 +358,11 @@ git commit -m "feat: add scoring (重さ × 単価 = 売上) without jokers"
 - Test: `tests/jokers.test.ts`
 
 **Interfaces:**
-- Consumes: `ScoreContext` / `ScoreAcc` / `ScoreEnv` / `ScoreLine`（Task 3）、`RunState`（Task 7 で定義。それまでは `src/game/run.ts` の型が無くてもコンパイルできるよう、フックの引数は `import type` で受ける）
+- Consumes: `ScoreContext` / `ScoreAcc` / `ScoreEnv` / `ScoreLine` / `JokerRunView`（Task 3）
+- 注意: ランに触るフック（`onDiscard` / `onBlindCleared` / `onAcquire`）と `joker*` ヘルパーは `RunState` ではなく **`JokerRunView`** を取る。`run.ts` を import しないので、Task 4 の時点で `RunState` がまだ無くてもビルドが通る
 - Produces:
-  - `data/jokers.ts`: `type JokerDef = { id: string; name: string; rarity: Rarity; text: string; price: number; special?: boolean; onScore?: (ctx: ScoreContext, acc: ScoreAcc, self: JokerInstance, env: ScoreEnv) => void; onDiscard?: (run: RunState, self: JokerInstance) => void; onBlindCleared?: (run: RunState, self: JokerInstance) => void; onAcquire?: (run: RunState) => void; handSizeMod?: number; interestRate?: number; interestCap?: number; sellBonus?: number; rerollDiscount?: number }` / `JOKERS: readonly JokerDef[]`（20枚）/ `jokerDef(id: string): JokerDef` / `SPECIAL_JOKER_ID = 'fuhou-touki'`
-  - `jokers.ts`: `applyScoreJokers(ctx: ScoreContext, env: ScoreEnv, acc: ScoreAcc): void` / `jokerHandSizeMod(run: RunState): number` / `jokerInterestRate(run: RunState): number` / `jokerInterestCap(run: RunState): number` / `jokerSellBonus(run: RunState): number` / `jokerRerollDiscount(run: RunState): number`
+  - `data/jokers.ts`: `type JokerDef = { id: string; name: string; rarity: Rarity; text: string; price: number; special?: boolean; onScore?: (ctx: ScoreContext, acc: ScoreAcc, self: JokerInstance, env: ScoreEnv) => void; onDiscard?: (run: JokerRunView, self: JokerInstance) => void; onBlindCleared?: (run: JokerRunView, self: JokerInstance) => void; onAcquire?: (run: JokerRunView) => void; handSizeMod?: number; interestRate?: number; interestCap?: number; sellBonus?: number; rerollDiscount?: number }` / `JOKERS: readonly JokerDef[]`（20枚）/ `jokerDef(id: string): JokerDef` / `SPECIAL_JOKER_ID = 'fuhou-touki'`
+  - `jokers.ts`: `applyScoreJokers(ctx: ScoreContext, env: ScoreEnv, acc: ScoreAcc): void` / `jokerHandSizeMod(run: JokerRunView): number` / `jokerInterestRate(run: JokerRunView): number` / `jokerInterestCap(run: JokerRunView): number` / `jokerSellBonus(run: JokerRunView): number` / `jokerRerollDiscount(run: JokerRunView): number`
   - 広告: ジョーカーID は `truck-2t` / `truck-4t` / `truck-8t` / `unic` / `armroll` / `trailer` / `pipe` / `transship` / `bulk-sub` / `manifest` / `sorting-master` / `demolition` / `dehydrator` / `sorting-line` / `tokkan-truck` / `asbestos` / `shareholder` / `recycle-shop` / `big-client` / `fuhou-touki`
 
 - [ ] **Step 1: 失敗するテストを書く**
@@ -474,11 +483,14 @@ spec の表のとおりに名前・レア度・`text`（画面に出す説明。
 
 Run: `npm test -- tests/jokers.test.ts` → PASS
 
-- [ ] **Step 7: コミット**
+- [ ] **Step 7: コミット（2回に分ける）**
 
 ```bash
-git add -A
-git commit -m "feat: add the 20 jokers and hook them into scoring"
+git add src/data/jokers.ts
+git commit -m "feat: ジョーカー20枚の定義を足す"
+
+git add src/game/jokers.ts src/game/score.ts tests/jokers.test.ts
+git commit -m "feat: ジョーカーを採点に組み込む"
 ```
 
 ---
@@ -551,7 +563,7 @@ describe('bossRules', () => {
 
 ```bash
 git add -A
-git commit -m "feat: add the 9 blinds, their goals, and the 元請 rules"
+git commit -m "feat: 9便の目標金額と、元請の縛りを足す"
 ```
 
 ---
@@ -633,7 +645,7 @@ describe('rerollCost / sellValue', () => {
 
 ```bash
 git add -A
-git commit -m "feat: add the shop pool, reroll cost, and sell value"
+git commit -m "feat: ショップの品揃えとリロール費用と売却額を足す"
 ```
 
 ---
@@ -754,7 +766,7 @@ describe('デッキ切れ', () => {
 
 ```bash
 git add -A
-git commit -m "feat: play a single blind (draw, select, 搬入, 捨てる, 突破判定)"
+git commit -m "feat: 1便を遊べるようにする（配る・選ぶ・搬入・捨てる・突破判定）"
 ```
 
 ---
@@ -883,7 +895,14 @@ describe('累積カウンタは便をまたいで残る', () => {
 
 - [ ] **Step 4: テストを通す** → PASS
 
-- [ ] **Step 5: 通しで1ラン回るスモークテストを足す**
+- [ ] **Step 5: ここまでをコミット**
+
+```bash
+git add src/game/run.ts tests/run.test.ts
+git commit -m "feat: 精算して報酬・手数ボーナス・利息を払い、ランを進める"
+```
+
+- [ ] **Step 6: 通しで1ラン回るスモークテストを足す**
 
 ```ts
 // tests/run-full.test.ts
@@ -907,11 +926,11 @@ it('ランの最初から最後まで、例外を出さずに必ず終わる', (
 
 Run: `npm test` → PASS
 
-- [ ] **Step 6: コミット**
+- [ ] **Step 7: コミット**
 
 ```bash
-git add -A
-git commit -m "feat: settle blinds, pay out rewards and interest, and drive the run"
+git add tests/run-full.test.ts
+git commit -m "test: ランの最初から最後まで通るスモークテストを足す"
 ```
 
 ---
@@ -997,11 +1016,14 @@ describe('盤面の描画', () => {
 
 Run: `npm run dev` → http://localhost:5173 で、カードが選べて搬入でき、数字が出ることを目視する。
 
-- [ ] **Step 6: コミット**
+- [ ] **Step 6: コミット（2回に分ける）**
 
 ```bash
-git add -A
-git commit -m "feat: render the board (hand, jokers, target, scoring)"
+git add src/ui/render.ts src/ui/style.css tests/render-board.test.ts
+git commit -m "feat: 盤面（手札・ジョーカー・目標・採点）を描く"
+
+git add src/ui/app.ts src/main.ts vite.config.ts package.json
+git commit -m "feat: アクションを配線して、dev で遊べるようにする"
 ```
 
 ---
@@ -1085,11 +1107,14 @@ describe('画面遷移', () => {
 
 Run: `npm run dev` で、タイトル → 元請選択 → 盤面 → 精算 → ショップ → 次の便 → 3日目の締切 → リザルトまで通す。落ちないこと、手札4回で必ず決着がつくことを確認する。
 
-- [ ] **Step 6: コミット**
+- [ ] **Step 6: コミット（2回に分ける）**
 
 ```bash
-git add -A
-git commit -m "feat: add title, blind select, cashout, shop, and result screens"
+git add src/ui/render.ts src/ui/style.css tests/render-screens.test.ts
+git commit -m "feat: タイトル・元請選択・精算・ショップ・リザルトを描く"
+
+git add src/ui/app.ts
+git commit -m "feat: 画面遷移を配線する"
 ```
 
 ---
@@ -1151,11 +1176,14 @@ describe('sound', () => {
 
 Run: `npm run dev` → 配る音・選ぶ音・搬入の3段・突破の音が鳴り、🔊 で止まることを確認する。
 
-- [ ] **Step 7: コミット**
+- [ ] **Step 7: コミット（2回に分ける）**
 
 ```bash
-git add -A
-git commit -m "feat: add minimal WebAudio sound effects and the mute toggle"
+git add src/ui/sound.ts tests/sound.test.ts
+git commit -m "feat: WebAudio で効果音を合成する"
+
+git add src/ui/app.ts src/ui/render.ts src/main.ts
+git commit -m "feat: ゲームの操作から効果音を鳴らす"
 ```
 
 ---
@@ -1183,9 +1211,12 @@ git commit -m "feat: add minimal WebAudio sound effects and the mute toggle"
 Run: `npm test && npm run lint && npm run typecheck && npm run build`
 Expected: すべて成功。`dist/` が生成される。
 
-- [ ] **Step 4: コミット**
+- [ ] **Step 4: コミット（2回に分ける）**
 
 ```bash
-git add -A
-git commit -m "docs: add README and the GitHub Pages workflow"
+git add README.md
+git commit -m "docs: README を書く"
+
+git add .github/workflows/deploy.yml vite.config.ts
+git commit -m "chore: master への push で GitHub Pages に配信する"
 ```

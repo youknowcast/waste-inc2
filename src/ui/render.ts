@@ -176,7 +176,7 @@ function renderShopJokers(run: RunState): string {
 
 function renderResult(run: RunState): string {
   const cleared =
-    (run.day - 1) * 3 + (run.result === 'won' ? run.blindIndex : 0);
+    (run.day - 1) * 3 + (run.result === 'lost' ? run.blindIndex : 0);
   const rank =
     run.totalRevenue < 8000 ? 'B' : run.totalRevenue < 15000 ? 'A' : 'S';
   return `

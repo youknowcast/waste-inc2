@@ -70,3 +70,35 @@ describe('画面遷移', () => {
     expect(renderApp(app)).toContain('解散');
   });
 });
+
+describe('リザルトの突破した便', () => {
+  function resultApp(seed: string): ReturnType<typeof createApp> {
+    const app = createApp(seed);
+    app.screen = 'result';
+    return app;
+  }
+
+  it('1日目午後便で敗北すると 1／9 と表示する', () => {
+    const app = resultApp('s');
+    app.run.day = 1;
+    app.run.blindIndex = 1;
+    app.run.result = 'lost';
+    expect(renderApp(app)).toContain('1／9');
+  });
+
+  it('3日目締切で敗北すると 8／9 と表示する', () => {
+    const app = resultApp('s');
+    app.run.day = 3;
+    app.run.blindIndex = 2;
+    app.run.result = 'lost';
+    expect(renderApp(app)).toContain('8／9');
+  });
+
+  it('勝利すると 9／9 と表示する', () => {
+    const app = resultApp('s');
+    app.run.day = 4;
+    app.run.blindIndex = 0;
+    app.run.result = 'won';
+    expect(renderApp(app)).toContain('9／9');
+  });
+});

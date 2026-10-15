@@ -784,6 +784,10 @@ git commit -m "feat: 1便を遊べるようにする（配る・選ぶ・搬入�
 
 **Interfaces:**
 - Consumes: Task 7 のすべて、`jokerInterestRate` / `jokerInterestCap` / `jokerSellBonus` / `jokerRerollDiscount`（Task 4）、`INTEREST_UNIT` / `INTEREST_RATE` / `INTEREST_CAP` / `HAND_BONUS_PER_HAND`（Task 1）
+- **このタスクが「累積」ジョーカーの加算側を持つ**（Task 4 は読む側しか作っていない）:
+  - アームロール車に `onDiscard` を足す（`self.counters.weight = (self.counters.weight ?? 0) + 10`）
+  - マニフェスト管理の `onScore` に採点ごとの加算を足す（`self.counters.mult = (self.counters.mult ?? 0) + 0.2` してから `acc.multAdd` に載せる）
+  - Task 4 のテストは `counters` を注入して「効き」を見ているので、この加算を反映した期待値に直す
 - Produces:
   - `type Payout = { reward: number; handBonus: number; interest: number; total: number }`
   - `payoutFor(run: RunState, blind: BlindState): Payout` — `reward` は `blind.def.reward`、`handBonus = blind.handsLeft * HAND_BONUS_PER_HAND`、`interest = min(cap, floor(run.money / INTEREST_UNIT) * rate)`。`rate` / `cap` はジョーカーで上書き（中間処理場の株主なら 2 / 10）

@@ -585,7 +585,7 @@ git commit -m "feat: 9便の目標金額と、元請の縛りを足す"
   - `type ShopState = { offers: ShopOffer[]; rerolls: number }`
   - `openShop(rng: Rng): ShopState` — `SHOP_SLOTS` 枠。レア度を重み付きで抽選。同じショップ内で同じ `defId` を2枚出さない。`SPECIAL_CHANCE` の確率で1枠が不法投棄の噂に置き換わる
   - `rerollCost(shop: ShopState, discount: number): number` — `max(0, REROLL_BASE + REROLL_STEP * shop.rerolls - discount)`
-  - `rerollShop(rng: Rng, shop: ShopState, discount: number): void` — 所持金の判定は呼び出し側。成功したら `shop.rerolls++` して引き直す
+  - `rerollShop(rng: Rng, shop: ShopState): void` — 所持金の判定と支払いは呼び出し側が `rerollCost` で行う。成功したら `shop.rerolls++` して引き直す
   - `sellValue(def: JokerDef, sellBonus: number): number` — `Math.floor(def.price / 2) + sellBonus`
   - `canBuy(view: JokerRunView, offer: ShopOffer): boolean` — 所持金が足りて、`view.jokers.length < MAX_JOKERS`
 

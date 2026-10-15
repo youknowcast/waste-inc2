@@ -25,12 +25,12 @@ export function renderApp(app: AppState): string {
   }
 }
 
-function renderTitle(_app: AppState): string {
+function renderTitle(app: AppState): string {
   return `
     <div class="title-screen">
       <h1>WASTE INC. II</h1>
       <p>産業廃棄物ローグライク</p>
-      <button class="btn btn-primary" data-action="newRun" data-seed="demo">はじめる</button>
+      <button class="btn btn-primary" data-action="newRun" data-seed="${app.run.seed}">はじめる</button>
     </div>
   `;
 }
@@ -123,7 +123,7 @@ function jokerLineHtml(line: ScoreLine): string {
 
 function formatNumber(n: number): string {
   if (Number.isInteger(n)) return String(n);
-  return n.toFixed(1).replace(/\.0$/, '');
+  return n.toFixed(2).replace(/\.?0+$/, '');
 }
 
 export function cardHtml(

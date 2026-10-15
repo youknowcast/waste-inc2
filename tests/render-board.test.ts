@@ -63,4 +63,24 @@ describe('盤面の描画', () => {
     dispatch(app, { kind: 'toggleCard', cardId: id });
     expect(app.blind.selected).toEqual([id]);
   });
+  it('タイトルは createApp に渡したシードを data-seed に持つ', () => {
+    const a = renderApp(createApp('alpha'));
+    const b = renderApp(createApp('beta'));
+    expect(a).toContain('data-seed="alpha"');
+    expect(b).toContain('data-seed="beta"');
+    expect(a).not.toContain('data-seed="beta"');
+  });
+  it('ユニック車は ×1.25 と表示される（1.3 に丸められない）', () => {
+    const app = createApp('s');
+    app.screen = 'board';
+    app.blind = startBlind(app.run);
+    app.run.jokers.push({ defId: 'unic', counters: {} });
+    toggleSelect(app.blind, app.blind.hand[0].id);
+    toggleSelect(app.blind, app.blind.hand[1].id);
+    toggleSelect(app.blind, app.blind.hand[2].id);
+    playHand(app.run, app.blind);
+    const html = renderApp(app);
+    expect(html).toContain('×1.25');
+    expect(html).not.toContain('×1.3');
+  });
 });

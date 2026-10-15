@@ -200,7 +200,7 @@ import type { Card, Rank, Suit } from '../src/game/types'
 import { evaluateHand, scoringCards } from '../src/game/hands'
 
 const c = (suit: Suit, ...ranks: Rank[]): Card[] =>
-  ranks.map(r => ({ id: `${suit}-${r}`, suit, rank: r }))
+  ranks.map((r, i) => ({ id: `${suit}-${r}-${i}`, suit, rank: r }))
 
 describe('evaluateHand', () => {
   it('1枚は単発搬入', () => expect(evaluateHand(c('kenpai', 2))).toBe('high'))
@@ -211,9 +211,11 @@ describe('evaluateHand', () => {
   it('A は 1 としても使える（A2345）', () => expect(evaluateHand([
     ...c('kenpai', 14), ...c('odei', 2), ...c('shigen', 3), ...c('tokkan', 4), ...c('kenpai', 5),
   ])).toBe('straight'))
-  it('10JQKA は特級一括搬入', () => expect(evaluateHand([
+  it('同一分類の 10JQKA は特級一括搬入', () =>
+    expect(evaluateHand(c('shigen', 10, 11, 12, 13, 14))).toBe('royalFlush'))
+  it('10JQKA でも分類が混ざれば段積み', () => expect(evaluateHand([
     ...c('kenpai', 10), ...c('odei', 11), ...c('shigen', 12), ...c('tokkan', 13), ...c('kenpai', 14),
-  ])).toBe('royalFlush'))
+  ])).toBe('straight'))
   it('分別搬入（同一分類5枚）', () => expect(evaluateHand(c('odei', 2, 5, 9, 11, 13))).toBe('flush'))
   it('三点＋二点', () => expect(evaluateHand(c('kenpai', 7, 7, 7, 2, 2))).toBe('fullHouse'))
   it('四点積み', () => expect(evaluateHand(c('kenpai', 7, 7, 7, 7))).toBe('four'))
@@ -288,7 +290,7 @@ import { NO_BOSS, scorePlay } from '../src/game/score'
 import { evaluateHand, scoringCards } from '../src/game/hands'
 import type { Card, Rank, Suit } from '../src/game/types'
 
-const c = (suit: Suit, ...ranks: Rank[]): Card[] => ranks.map(r => ({ id: `${suit}-${r}`, suit, rank: r }))
+const c = (suit: Suit, ...ranks: Rank[]): Card[] => ranks.map((r, i) => ({ id: `${suit}-${r}-${i}`, suit, rank: r }))
 const env = { jokers: [] }
 const play = (cards: Card[], boss = NO_BOSS) => {
   const handType = evaluateHand(cards)
@@ -364,6 +366,7 @@ git commit -m "feat: 重さ × 単価 = 売上 の採点を足す（ジョーカ
   - `data/jokers.ts`: `type JokerDef = { id: string; name: string; rarity: Rarity; text: string; price: number; special?: boolean; onScore?: (ctx: ScoreContext, acc: ScoreAcc, self: JokerInstance, env: ScoreEnv) => void; onDiscard?: (run: JokerRunView, self: JokerInstance) => void; onBlindCleared?: (run: JokerRunView, self: JokerInstance) => void; onAcquire?: (run: JokerRunView) => void; handSizeMod?: number; interestRate?: number; interestCap?: number; sellBonus?: number; rerollDiscount?: number }` / `JOKERS: readonly JokerDef[]`（20枚）/ `jokerDef(id: string): JokerDef` / `SPECIAL_JOKER_ID = 'fuhou-touki'`
   - `jokers.ts`: `applyScoreJokers(ctx: ScoreContext, env: ScoreEnv, acc: ScoreAcc): void` / `jokerHandSizeMod(run: JokerRunView): number` / `jokerInterestRate(run: JokerRunView): number` / `jokerInterestCap(run: JokerRunView): number` / `jokerSellBonus(run: JokerRunView): number` / `jokerRerollDiscount(run: JokerRunView): number`
   - 広告: ジョーカーID は `truck-2t` / `truck-4t` / `truck-8t` / `unic` / `armroll` / `trailer` / `pipe` / `transship` / `bulk-sub` / `manifest` / `sorting-master` / `demolition` / `dehydrator` / `sorting-line` / `tokkan-truck` / `asbestos` / `shareholder` / `recycle-shop` / `big-client` / `fuhou-touki`
+  - 累積カウンタのキー名（Task 7・8 と必ず合わせる）: アームロール車は `counters.weight`（捨て札1回ごとに +10）、マニフェスト管理は `counters.mult`（採点1回ごとに +0.2）
 
 - [ ] **Step 1: 失敗するテストを書く**
 
@@ -375,7 +378,7 @@ import { NO_BOSS, scorePlay } from '../src/game/score'
 import { evaluateHand, scoringCards } from '../src/game/hands'
 import type { Card, JokerInstance, Rank, Suit } from '../src/game/types'
 
-const c = (suit: Suit, ...ranks: Rank[]): Card[] => ranks.map(r => ({ id: `${suit}-${r}-${Math.random()}`, suit, rank: r }))
+const c = (suit: Suit, ...ranks: Rank[]): Card[] => ranks.map((r, i) => ({ id: `${suit}-${r}-${i}`, suit, rank: r }))
 const jk = (...ids: string[]): JokerInstance[] => ids.map(defId => ({ defId, counters: {} }))
 const play = (cards: Card[], jokers: JokerInstance[] = [], boss = NO_BOSS) => {
   const handType = evaluateHand(cards)
@@ -575,7 +578,8 @@ git commit -m "feat: 9便の目標金額と、元請の縛りを足す"
 - Test: `tests/shop.test.ts`
 
 **Interfaces:**
-- Consumes: `JOKERS` / `jokerDef` / `SPECIAL_JOKER_ID`（Task 4）、`RARITY_PRICE` / `RARITY_WEIGHT` / `REROLL_BASE` / `REROLL_STEP` / `SHOP_SLOTS` / `SPECIAL_CHANCE` / `MAX_JOKERS`（Task 1）、`jokerSellBonus` / `jokerRerollDiscount`（Task 4）
+- Consumes: `JOKERS` / `jokerDef` / `SPECIAL_JOKER_ID`（Task 4）、`JokerRunView`（Task 3）、`RARITY_PRICE` / `RARITY_WEIGHT` / `REROLL_BASE` / `REROLL_STEP` / `SHOP_SLOTS` / `SPECIAL_CHANCE` / `MAX_JOKERS`（Task 1）、`jokerSellBonus` / `jokerRerollDiscount`（Task 4）
+- 注意: `run.ts`（Task 7）はまだ無いので、`RunState` を取らず `JokerRunView` を使う
 - Produces:
   - `type ShopOffer = { defId: string; price: number }`
   - `type ShopState = { offers: ShopOffer[]; rerolls: number }`
@@ -583,7 +587,7 @@ git commit -m "feat: 9便の目標金額と、元請の縛りを足す"
   - `rerollCost(shop: ShopState, discount: number): number` — `max(0, REROLL_BASE + REROLL_STEP * shop.rerolls - discount)`
   - `rerollShop(rng: Rng, shop: ShopState, discount: number): void` — 所持金の判定は呼び出し側。成功したら `shop.rerolls++` して引き直す
   - `sellValue(def: JokerDef, sellBonus: number): number` — `Math.floor(def.price / 2) + sellBonus`
-  - `canBuy(run: RunState, offer: ShopOffer): boolean` — 所持金が足りて、`run.jokers.length < MAX_JOKERS`
+  - `canBuy(view: JokerRunView, offer: ShopOffer): boolean` — 所持金が足りて、`view.jokers.length < MAX_JOKERS`
 
 - [ ] **Step 1: 失敗するテストを書く**
 
@@ -662,7 +666,8 @@ git commit -m "feat: ショップの品揃えとリロール費用と売却額�
   - `type RunState = { seed: string; rng: Rng; money: number; day: number; blindIndex: number; jokers: JokerInstance[]; result: 'playing' | 'won' | 'lost'; totalRevenue: number }`
   - `type BlindState = { def: BlindDef; boss: BossRules; hand: Card[]; drawPile: Card[]; discardPile: Card[]; selected: string[]; handsLeft: number; discardsLeft: number; revenue: number; lastScore: ScoreBreakdown | null; status: 'playing' | 'cleared' | 'failed' }`
   - `startRun(seed: string): RunState`（money = `START_MONEY`、day = 1、blindIndex = 0）
-  - `startBlind(run: RunState): BlindState` — その都度52枚を組み立てて `run.rng` でシャッフルし、`HAND_SIZE + boss.handSizeMod` 枚を配る。手札4・捨て札3。デッキは便ごとに作り直す（アルファにはデッキを増減する仕組みが無いので、持ち越しても結果は同じ）
+  - `startBlind(run: RunState): BlindState` — `blindAt(run.day, run.blindIndex)` と `bossRules(blind)` から便を組み立てる。その都度52枚を作って `run.rng` でシャッフルし、`handSizeFor` の枚数を配る。手札4・捨て札3。デッキは便ごとに作り直す（アルファにはデッキを増減する仕組みが無いので、持ち越しても結果は同じ）
+  - `handSizeFor(run: RunState, boss: BossRules): number` — **手札枚数 = `HAND_SIZE + boss.handSizeMod + jokerHandSizeMod(run)`**。`startBlind` と `drawUpTo` の両方がこれを使う（大雨警報とアスベスト除去作業員が重なれば6枚になる）
   - `toggleSelect(blind: BlindState, cardId: string): void` — 5枚を超える選択は無視。選択済みなら外す
   - `playHand(run: RunState, blind: BlindState): ScoreBreakdown | null` — 選択が空なら null。売上を `blind.revenue` に足し、`handsLeft--`。搬入したカードを捨て山へ送り、手札を引き直す。`revenue >= def.goal` なら `status = 'cleared'`、`handsLeft === 0` で未達なら `status = 'failed'`
   - `discardSelected(run: RunState, blind: BlindState): void` — 選択を捨て山へ。`discardsLeft--`。捨てたあと `onDiscard` フックを回す
@@ -726,18 +731,18 @@ describe('選択と搬入', () => {
 describe('突破と失敗', () => {
   it('目標に届いたら cleared', () => {
     const run = startRun('s'); const blind = startBlind(run)
-    blind.revenue = blind.def.goal - 1
-    // 何か1枚搬入して超える
-    toggleSelect(blind, blind.hand[0].id)
+    blind.revenue = blind.def.goal - 1          // あと1万円
+    toggleSelect(blind, blind.hand[0].id)       // 1枚でも必ず7万円以上になる
     playHand(run, blind)
-    expect(['cleared', 'playing']).toContain(blind.status)
-    if (blind.revenue >= blind.def.goal) expect(blind.status).toBe('cleared')
+    expect(blind.revenue).toBeGreaterThanOrEqual(blind.def.goal)
+    expect(blind.status).toBe('cleared')
   })
   it('手札を使い切って未達なら failed', () => {
-    const run = startRun('s'); const blind = startBlind(run)
+    const run = startRun('s'); const blind = startBlind(run)   // 1日目午前便の目標は300万円
     for (let i = 0; i < 4; i++) { toggleSelect(blind, blind.hand[0].id); playHand(run, blind) }
     expect(blind.handsLeft).toBe(0)
-    expect(blind.revenue < blind.def.goal ? blind.status : '').toBeTruthy()
+    expect(blind.revenue).toBeLessThan(blind.def.goal)         // 1枚ずつでは到底届かない
+    expect(blind.status).toBe('failed')
   })
 })
 
@@ -939,7 +944,7 @@ git commit -m "test: ランの最初から最後まで通るスモークテス�
 
 **Files:**
 - Create: `src/ui/app.ts`, `src/ui/render.ts`
-- Modify: `src/ui/style.css`, `src/main.ts`, `vite.config.ts`（`test.environment` は jsdom にできないので、UI テストだけ `// @vitest-environment jsdom` をファイル先頭に置く）
+- Modify: `src/ui/style.css`, `src/main.ts`, `vite.config.ts`, `package.json`（`jsdom` を devDependency に足す）
 - Test: `tests/render-board.test.ts`
 
 **Interfaces:**
@@ -958,6 +963,7 @@ import { describe, expect, it } from 'vitest'
 import { createApp, dispatch } from '../src/ui/app'
 import { renderApp } from '../src/ui/render'
 import { startBlind, toggleSelect, playHand } from '../src/game/run'
+import { itemName } from '../src/game/cards'
 
 describe('盤面の描画', () => {
   it('目標金額・品目名・役の呼称・売上が出る', () => {
@@ -966,7 +972,7 @@ describe('盤面の描画', () => {
     const html = renderApp(app)
     expect(html).toContain('目標')
     expect(html).toContain('300')                 // 1日目午前便の目標
-    expect(html).toMatch(/石膏ボード|廃木材|コンクリートがれき/)
+    expect(app.blind.hand.some(card => html.includes(itemName(card)))).toBe(true)
     expect(html).toContain('搬入')
     expect(html).toContain('捨てる')
   })
@@ -1007,6 +1013,8 @@ describe('盤面の描画', () => {
 - [ ] **Step 2: 落ちることを確認する** → Run: `npm i -D jsdom && npm test -- tests/render-board.test.ts` → FAIL
 
 - [ ] **Step 3: `src/ui/render.ts` と `src/ui/app.ts` を実装する**
+
+vitest の既定 environment は `node` のままにしておき、UI のテストだけファイル先頭の `// @vitest-environment jsdom` で切り替える。
 
 盤面の並びは spec のモックアップ（`.superpowers/brainstorm/2772561-1792083678/content/board-v3.html`）に合わせる。上段に「N日目 ○○便／残り手札・捨て札」と目標金額、その下に売上バー、中央に採点結果、下段に手札8枚、左下にジョーカー5枠（名前＋効果）、右下に「搬入／捨てる」。クリック対象には `data-action` と `data-card` を付け、選択中のカードには `data-selected="true"` を付ける。
 

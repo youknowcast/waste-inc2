@@ -1,0 +1,72 @@
+// @vitest-environment jsdom
+import { describe, expect, it } from 'vitest';
+import { createApp, dispatch } from '../src/ui/app';
+import { renderApp } from '../src/ui/render';
+
+describe('画面遷移', () => {
+  it('タイトルから始まり、はじめる と シードが出る', () => {
+    const app = createApp('s');
+    expect(app.screen).toBe('title');
+    expect(renderApp(app)).toContain('waste-inc2');
+  });
+  it('元請選択に3便と目標金額が並ぶ', () => {
+    const app = createApp('s');
+    dispatch(app, { kind: 'newRun', seed: 's' });
+    const html = renderApp(app);
+    expect(app.screen).toBe('blinds');
+    expect(html).toContain('午前便');
+    expect(html).toContain('締切');
+    expect(html).toContain('300');
+  });
+  it('突破すると精算画面に報酬・手数ボーナス・利息が出る', () => {
+    const app = createApp('s');
+    dispatch(app, { kind: 'newRun', seed: 's' });
+    dispatch(app, { kind: 'openBlind' });
+    const blind = app.blind;
+    expect(blind).not.toBeNull();
+    if (!blind) throw new Error('blind is null');
+    blind.revenue = blind.def.goal;
+    blind.status = 'cleared';
+    dispatch(app, { kind: 'settle' });
+    const html = renderApp(app);
+    expect(app.screen).toBe('cashout');
+    expect(html).toContain('報酬');
+    expect(html).toContain('利息');
+  });
+  it('ショップに並ぶジョーカーと価格が出て、買うと所持金が減る', () => {
+    const app = createApp('s');
+    dispatch(app, { kind: 'newRun', seed: 's' });
+    dispatch(app, { kind: 'openBlind' });
+    const blind = app.blind;
+    expect(blind).not.toBeNull();
+    if (!blind) throw new Error('blind is null');
+    blind.revenue = blind.def.goal;
+    blind.status = 'cleared';
+    dispatch(app, { kind: 'settle' });
+    dispatch(app, { kind: 'next' });
+    expect(app.screen).toBe('shop');
+    expect(renderApp(app)).toContain('万円');
+    const shop = app.shop;
+    expect(shop).not.toBeNull();
+    if (!shop) throw new Error('shop is null');
+    const slot = shop.offers.findIndex((o) => o.price > 0);
+    expect(slot).toBeGreaterThanOrEqual(0);
+    const price = shop.offers[slot].price;
+    app.run.money = 999;
+    dispatch(app, { kind: 'buy', slot });
+    expect(app.run.jokers).toHaveLength(1);
+    expect(app.run.money).toBe(999 - price);
+  });
+  it('未達で終わるとリザルトが lost を出す', () => {
+    const app = createApp('s');
+    dispatch(app, { kind: 'newRun', seed: 's' });
+    dispatch(app, { kind: 'openBlind' });
+    const blind = app.blind;
+    expect(blind).not.toBeNull();
+    if (!blind) throw new Error('blind is null');
+    blind.status = 'failed';
+    dispatch(app, { kind: 'settle' });
+    expect(app.screen).toBe('result');
+    expect(renderApp(app)).toContain('解散');
+  });
+});

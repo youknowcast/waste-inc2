@@ -1,4 +1,4 @@
-import { bossLabel } from '../data/blinds.ts';
+import { blindAt, bossLabel, bossText } from '../data/blinds.ts';
 import type { JokerDef } from '../data/jokers.ts';
 import { jokerDef } from '../data/jokers.ts';
 import {
@@ -9,8 +9,11 @@ import {
   SUIT_MARK,
 } from '../game/cards.ts';
 import { MAX_JOKERS } from '../game/constants.ts';
-import type { BlindState, RunState } from '../game/run.ts';
+import { jokerRerollDiscount, jokerSellBonus } from '../game/jokers.ts';
+import type { BlindState, Payout, RunState } from '../game/run.ts';
 import type { ScoreBreakdown, ScoreLine } from '../game/score.ts';
+import type { ShopState } from '../game/shop.ts';
+import { rerollCost, sellValue } from '../game/shop.ts';
 import type { Card, JokerInstance } from '../game/types.ts';
 import type { AppState } from './app.ts';
 
@@ -18,8 +21,16 @@ export function renderApp(app: AppState): string {
   switch (app.screen) {
     case 'title':
       return renderTitle(app);
+    case 'blinds':
+      return renderBlinds(app.run);
     case 'board':
       return app.blind ? renderBoard(app.run, app.blind) : renderTitle(app);
+    case 'cashout':
+      return app.payout ? renderCashout(app.run, app.payout) : '';
+    case 'shop':
+      return app.shop ? renderShop(app.run, app.shop) : '';
+    case 'result':
+      return renderResult(app.run);
     default:
       return `<div class="placeholder">${app.screen}（未実装）</div>`;
   }
@@ -29,6 +40,7 @@ function renderTitle(app: AppState): string {
   return `
     <div class="title-screen">
       <h1>WASTE INC. II</h1>
+      <p class="slug">waste-inc2</p>
       <p>産業廃棄物ローグライク</p>
       <button class="btn btn-primary" data-action="newRun" data-seed="${app.run.seed}">はじめる</button>
     </div>
@@ -39,6 +51,153 @@ function timeLabel(index: number): string {
   if (index === 0) return '午前便';
   if (index === 1) return '午後便';
   return '締切';
+}
+
+function renderBlinds(run: RunState): string {
+  const rows = [0, 1, 2].map((i) => renderBlindRow(run.day, i));
+  return `
+    <div class="blinds-screen">
+      <div class="screen-title">元請の選択（${run.day}日目）</div>
+      <div class="blinds-list">
+        ${rows.join('')}
+      </div>
+      <div class="status-bar">
+        <span>所持金 <b>${run.money}万円</b></span>
+        <div class="jrow">${renderJokers(run.jokers)}</div>
+      </div>
+      <div class="btns">
+        <button class="btn btn-primary" data-action="openBlind">次の便を始める</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderBlindRow(day: number, index: number): string {
+  const def = blindAt(day, index as 0 | 1 | 2);
+  const tag = timeLabel(index);
+  const isBoss = index === 2;
+  const bossName = def.bossId ? bossLabel(def.bossId) : null;
+  const rule = def.bossId ? bossText(def.bossId) : null;
+  return `
+    <div class="blind-row${isBoss ? ' boss-row' : ''}">
+      <span class="tag">${tag}</span>
+      <span class="name">
+        ${def.name}
+        ${bossName ? `<span class="boss-name">${bossName}</span>` : ''}
+        ${rule ? `<span class="rule">${rule}</span>` : ''}
+      </span>
+      <span class="amt">${def.goal}万円</span>
+    </div>
+  `;
+}
+
+function renderCashout(run: RunState, payout: Payout): string {
+  return `
+    <div class="cashout-screen">
+      <div class="screen-title">精算</div>
+      <div class="receipt">
+        <div class="line"><span>報酬</span><span>${payout.reward}万円</span></div>
+        <div class="line"><span>手数ボーナス</span><span>${payout.handBonus}万円</span></div>
+        <div class="line"><span>利息</span><span>${payout.interest}万円</span></div>
+        <div class="line total"><span>合計</span><span>${payout.total}万円</span></div>
+      </div>
+      <div class="status-bar">所持金 <b>${run.money}万円</b></div>
+      <div class="btns">
+        <button class="btn btn-primary" data-action="next">次へ</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderShop(run: RunState, shop: ShopState): string {
+  const reroll = rerollCost(shop, jokerRerollDiscount(run));
+  return `
+    <div class="shop-screen">
+      <div class="screen-title">ショップ</div>
+      <div class="offers">
+        ${shop.offers.map((offer, i) => renderShopOffer(run, offer, i)).join('')}
+      </div>
+      <div class="btns">
+        <button class="btn btn-secondary" data-action="reroll">リロール ${reroll}万円</button>
+        <button class="btn btn-primary" data-action="next">次へ</button>
+      </div>
+      <div class="status-bar">所持金 <b>${run.money}万円</b></div>
+      <div class="shop-jokers">
+        ${renderShopJokers(run)}
+      </div>
+    </div>
+  `;
+}
+
+function renderShopOffer(
+  run: RunState,
+  offer: { defId: string; price: number },
+  slot: number,
+): string {
+  const def = jokerDef(offer.defId);
+  const affordable = run.money >= offer.price && run.jokers.length < MAX_JOKERS;
+  return `
+    <div class="offer">
+      <div class="offer-info">
+        <div class="jn">${def.name}</div>
+        <div class="je">${def.text}</div>
+      </div>
+      <div class="offer-buy">
+        <span class="price">${offer.price}万円</span>
+        <button class="btn btn-primary" data-action="buy" data-slot="${slot}"${!affordable ? ' disabled' : ''}>買う</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderShopJokers(run: RunState): string {
+  if (run.jokers.length === 0) return '';
+  return `
+    <div class="owned-title">所持ジョーカー</div>
+    <div class="owned-list">
+      ${run.jokers
+        .map((j, i) => {
+          const def = jokerDef(j.defId);
+          const value = sellValue(def, jokerSellBonus(run));
+          return `
+            <div class="owned-joker">
+              <div class="jc">
+                <div class="jn">${def.name}</div>
+                <div class="je">${def.text}</div>
+              </div>
+              <button class="btn btn-secondary" data-action="sell" data-index="${i}">売る ${value}万円</button>
+            </div>
+          `;
+        })
+        .join('')}
+    </div>
+  `;
+}
+
+function renderResult(run: RunState): string {
+  const cleared =
+    (run.day - 1) * 3 + (run.result === 'won' ? run.blindIndex : 0);
+  const rank =
+    run.totalRevenue < 8000 ? 'B' : run.totalRevenue < 15000 ? 'A' : 'S';
+  return `
+    <div class="result-screen">
+      <div class="screen-title">リザルト</div>
+      <div class="result-rank">ランク <b>${rank}</b></div>
+      <div class="result-summary">
+        <div class="line"><span>総売上</span><span>${run.totalRevenue}万円</span></div>
+        <div class="line"><span>残金</span><span>${run.money}万円</span></div>
+        <div class="line"><span>突破した便</span><span>${cleared}／9</span></div>
+        <div class="line"><span>シード</span><span>${run.seed}</span></div>
+      </div>
+      ${run.result === 'lost' ? '<div class="result-fate">解散</div>' : ''}
+      <div class="owned-list">
+        ${renderShopJokers(run)}
+      </div>
+      <div class="btns">
+        <button class="btn btn-primary" data-action="newRun" data-seed="${run.seed}">もう一度</button>
+      </div>
+    </div>
+  `;
 }
 
 function renderBoard(run: RunState, blind: BlindState): string {
@@ -72,8 +231,12 @@ function renderBoard(run: RunState, blind: BlindState): string {
           ${renderJokers(run.jokers)}
         </div>
         <div class="btns">
-          <button class="btn btn-primary" data-action="play">搬入</button>
-          <button class="btn btn-secondary" data-action="discard">捨てる</button>
+          ${
+            blind.status === 'playing'
+              ? `<button class="btn btn-primary" data-action="play">搬入</button>
+               <button class="btn btn-secondary" data-action="discard">捨てる</button>`
+              : `<button class="btn btn-primary" data-action="settle">締める</button>`
+          }
         </div>
       </div>
       ${bossName ? `<div class="boss">${bossName}</div>` : ''}

@@ -81,7 +81,7 @@ export function rerollCost(shop: ShopState, discount: number): number {
   return Math.max(0, REROLL_BASE + REROLL_STEP * shop.rerolls - discount);
 }
 
-export function rerollShop(rng: Rng, shop: ShopState, _discount: number): void {
+export function rerollShop(rng: Rng, shop: ShopState): void {
   shop.rerolls += 1;
   shop.offers = generateOffers(rng);
 }

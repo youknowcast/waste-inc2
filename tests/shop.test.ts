@@ -54,13 +54,13 @@ describe('rerollCost / sellValue', () => {
 describe('rerollShop', () => {
   it('リロール回数を増やし、品揃えを引き直す', () => {
     const shop = openShop(createRng('init'));
-    rerollShop(createRng('reroll'), shop, 0);
+    rerollShop(createRng('reroll'), shop);
     expect(shop.rerolls).toBe(1);
     expect(shop.offers).toHaveLength(2);
   });
   it('同じシードならopenShopと同じ品揃えになる', () => {
     const shop = openShop(createRng('init'));
-    rerollShop(createRng('same'), shop, 0);
+    rerollShop(createRng('same'), shop);
     expect(shop.offers).toEqual(openShop(createRng('same')).offers);
   });
 });

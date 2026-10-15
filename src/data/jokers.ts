@@ -39,6 +39,14 @@ function multLine(label: string, value: number): ScoreLine {
   return { label, kind: 'mult', value };
 }
 
+function xWeightLine(label: string, value: number): ScoreLine {
+  return { label, kind: 'xweight', value };
+}
+
+function xMultLine(label: string, value: number): ScoreLine {
+  return { label, kind: 'xmult', value };
+}
+
 function countSuit(ctx: ScoreContext, suit: string): number {
   return ctx.played.filter((c) => c.suit === suit).length;
 }
@@ -87,7 +95,7 @@ export const JOKERS: readonly JokerDef[] = [
     onScore(ctx, acc) {
       if (ctx.played.length >= 3) {
         acc.xWeight *= 1.25;
-        acc.lines.push(weightLine('ユニック車', 1.25));
+        acc.lines.push(xWeightLine('ユニック車', 1.25));
       }
     },
   },
@@ -182,7 +190,7 @@ export const JOKERS: readonly JokerDef[] = [
     onScore(ctx, acc) {
       if (ctx.handType === 'flush') {
         acc.xMult *= 1.5;
-        acc.lines.push(multLine('分別の達人', 1.5));
+        acc.lines.push(xMultLine('分別の達人', 1.5));
       }
     },
   },
@@ -254,7 +262,7 @@ export const JOKERS: readonly JokerDef[] = [
     onScore(ctx, acc) {
       if (countSuit(ctx, 'tokkan') >= 3) {
         acc.xMult *= 2;
-        acc.lines.push(multLine('アスベスト除去作業員', 2));
+        acc.lines.push(xMultLine('アスベスト除去作業員', 2));
       }
     },
   },
@@ -302,7 +310,7 @@ export const JOKERS: readonly JokerDef[] = [
     },
     onScore(_ctx, acc) {
       acc.xMult *= 3;
-      acc.lines.push(multLine('不法投棄の噂', 3));
+      acc.lines.push(xMultLine('不法投棄の噂', 3));
     },
   },
 ];

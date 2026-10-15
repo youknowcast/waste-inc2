@@ -44,7 +44,9 @@ describe('選択と搬入', () => {
     const run = startRun('s');
     const blind = startBlind(run);
     toggleSelect(blind, blind.hand[0].id);
-    const score = playHand(run, blind)!;
+    const score = playHand(run, blind);
+    expect(score).not.toBeNull();
+    if (score === null) throw new Error('unreachable');
     expect(score.revenue).toBeGreaterThan(0);
     expect(blind.revenue).toBe(score.revenue);
     expect(blind.handsLeft).toBe(3);

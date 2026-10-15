@@ -37,7 +37,7 @@ export type ScoreContext = {
 
 export type ScoreLine = {
   label: string;
-  kind: 'weight' | 'mult';
+  kind: 'weight' | 'mult' | 'xweight' | 'xmult';
   value: number;
 };
 
@@ -95,17 +95,20 @@ export function scorePlay(ctx: ScoreContext, env: ScoreEnv): ScoreBreakdown {
     ...acc.lines,
   ];
 
-  if (acc.weightAdd !== 0) {
-    lines.push({ label: '重さ加算', kind: 'weight', value: acc.weightAdd });
-  }
-  if (acc.xWeight !== 1) {
-    lines.push({ label: '重さ倍率', kind: 'weight', value: acc.xWeight });
-  }
-  if (acc.multAdd !== 0) {
-    lines.push({ label: '単価加算', kind: 'mult', value: acc.multAdd });
-  }
-  if (acc.xMult !== 1) {
-    lines.push({ label: '単価倍率', kind: 'mult', value: acc.xMult });
+  // ジョーカーが内訳を出していないときだけ集計行を出す（重複表示を防ぐ）
+  if (acc.lines.length === 0) {
+    if (acc.weightAdd !== 0) {
+      lines.push({ label: '重さ加算', kind: 'weight', value: acc.weightAdd });
+    }
+    if (acc.xWeight !== 1) {
+      lines.push({ label: '重さ倍率', kind: 'weight', value: acc.xWeight });
+    }
+    if (acc.multAdd !== 0) {
+      lines.push({ label: '単価加算', kind: 'mult', value: acc.multAdd });
+    }
+    if (acc.xMult !== 1) {
+      lines.push({ label: '単価倍率', kind: 'mult', value: acc.xMult });
+    }
   }
 
   return {

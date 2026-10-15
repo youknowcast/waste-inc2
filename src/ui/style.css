@@ -1,1 +1,290 @@
-/* スタイルは後続タスクで埋める */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family:
+    "Hiragino Sans", "Noto Sans JP", "Yu Gothic", system-ui, sans-serif;
+  background: #0b0a10;
+  color: #e9e6f0;
+}
+
+#app {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.title-screen {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.title-screen h1 {
+  font-size: 42px;
+  font-weight: 900;
+  margin: 0 0 8px;
+  letter-spacing: 0.04em;
+}
+
+.title-screen p {
+  margin: 0 0 32px;
+  opacity: 0.6;
+}
+
+.bd {
+  background: #0f0e15;
+  border: 1px solid #33303e;
+  border-radius: 10px;
+  color: #e9e6f0;
+  padding: 14px;
+  max-width: 780px;
+  margin: 0 auto 18px;
+}
+
+.bd-top {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.bd-day {
+  font-size: 11px;
+  opacity: 0.65;
+  letter-spacing: 0.06em;
+}
+
+.bd-meta {
+  font-size: 11px;
+  opacity: 0.55;
+}
+
+.bd-goal {
+  text-align: right;
+}
+
+.bd-goal .n {
+  font-size: 26px;
+  font-weight: 800;
+  color: #ffd479;
+  line-height: 1;
+}
+
+.bd-goal .n span {
+  font-size: 14px;
+}
+
+.bd-goal .l {
+  font-size: 10px;
+  opacity: 0.6;
+  letter-spacing: 0.1em;
+}
+
+.bar {
+  height: 7px;
+  border-radius: 999px;
+  background: #26232f;
+  margin: 10px 0 4px;
+  overflow: hidden;
+}
+
+.bar > i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #2f7fa8, #7fd47f);
+}
+
+.bar-l {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+.stage {
+  min-height: 112px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 12px 0 4px;
+}
+
+.stage.quiet {
+  opacity: 0.3;
+  font-size: 12px;
+}
+
+.pf {
+  padding: 6px 16px;
+  border-radius: 999px;
+  font-weight: 800;
+  color: #fff;
+  font-size: 15px;
+}
+
+.pf-weight {
+  background: #2f7fa8;
+}
+
+.pf-mult {
+  background: #c0392b;
+}
+
+.op {
+  opacity: 0.7;
+}
+
+.res {
+  font-size: 30px;
+  font-weight: 900;
+  color: #ffd479;
+  line-height: 1;
+}
+
+.score-detail {
+  text-align: center;
+  font-size: 11px;
+  opacity: 0.75;
+  margin-bottom: 2px;
+}
+
+.score-detail .hl {
+  color: #ffd479;
+}
+
+.hand {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: 8px 0;
+}
+
+.hc {
+  width: 64px;
+  height: 90px;
+  border-radius: 7px;
+  background: #f4f1e8;
+  color: #17171a;
+  padding: 5px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border: 1px solid rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.08s ease;
+}
+
+.hc[data-selected="true"] {
+  outline: 3px solid #ffd479;
+  transform: translateY(-8px);
+}
+
+.hc .r {
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.hc .n {
+  font-size: 9px;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.hc .w {
+  font-size: 9px;
+  text-align: right;
+  opacity: 0.7;
+}
+
+.foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 10px;
+  border-top: 1px solid #2a2733;
+  padding-top: 10px;
+}
+
+.jrow {
+  display: flex;
+  gap: 7px;
+}
+
+.jc {
+  width: 96px;
+  border-radius: 7px;
+  background: #241f2e;
+  border: 1px solid #7a6fa0;
+  padding: 5px 7px;
+  overflow: hidden;
+}
+
+.jc .jn {
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #e9e6f0;
+}
+
+.jc .je {
+  font-size: 9.5px;
+  line-height: 1.25;
+  margin-top: 2px;
+  color: #b9b2cc;
+}
+
+.jc .je b {
+  color: #ffd479;
+}
+
+.jc.empty {
+  border-style: dashed;
+  border-color: #3a3746;
+  background: transparent;
+  height: 44px;
+}
+
+.btns {
+  display: flex;
+  gap: 8px;
+}
+
+.btn {
+  padding: 8px 18px;
+  border-radius: 7px;
+  font-weight: 800;
+  font-size: 12px;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: #2f7fa8;
+  color: #fff;
+}
+
+.btn-secondary {
+  background: #3a3746;
+  color: #ddd;
+}
+
+.boss {
+  font-size: 10px;
+  opacity: 0.6;
+  text-align: center;
+  margin-top: 8px;
+}
+
+.placeholder {
+  text-align: center;
+  padding: 40px;
+  opacity: 0.5;
+}

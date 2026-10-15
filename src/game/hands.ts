@@ -77,7 +77,6 @@ export function evaluateHand(cards: Card[]): HandType {
   const flush = isFlush(cards);
   const straight = isStraight(cards);
   const ranks = cards.map((c) => c.rank);
-  const maxRank = Math.max(...ranks);
 
   const counts = rankCounts(cards);
   const values = Object.values(counts);
@@ -86,7 +85,14 @@ export function evaluateHand(cards: Card[]): HandType {
   const pairCount = values.filter((n) => n === 2).length;
 
   if (flush && straight) {
-    return maxRank === 14 ? 'royalFlush' : 'straightFlush';
+    const sortedRanks = [...ranks].sort((a, b) => a - b);
+    const isRoyal =
+      sortedRanks[0] === 10 &&
+      sortedRanks[1] === 11 &&
+      sortedRanks[2] === 12 &&
+      sortedRanks[3] === 13 &&
+      sortedRanks[4] === 14;
+    return isRoyal ? 'royalFlush' : 'straightFlush';
   }
   if (hasFour) return 'four';
   if (hasThree && pairCount >= 1) return 'fullHouse';

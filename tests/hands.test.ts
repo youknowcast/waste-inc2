@@ -32,6 +32,8 @@ describe('evaluateHand', () => {
         ...c('kenpai', 5),
       ]),
     ).toBe('straight'));
+  it('同分類の A2345 は分別段積み（特級一括搬入ではない）', () =>
+    expect(evaluateHand(c('kenpai', 14, 2, 3, 4, 5))).toBe('straightFlush'));
   it('同一分類の 10JQKA は特級一括搬入', () =>
     expect(evaluateHand(c('shigen', 10, 11, 12, 13, 14))).toBe('royalFlush'));
   it('10JQKA でも分類が混ざれば段積み', () =>

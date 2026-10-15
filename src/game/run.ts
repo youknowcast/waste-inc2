@@ -4,14 +4,25 @@ import { bossRules } from './blinds.ts';
 import { createDeck, shuffleDeck } from './cards.ts';
 import {
   DISCARDS_PER_BLIND,
+  HAND_BONUS_PER_HAND,
   HAND_SIZE,
   HANDS_PER_BLIND,
+  INTEREST_CAP,
+  INTEREST_RATE,
+  INTEREST_UNIT,
+  MAX_JOKERS,
   START_MONEY,
 } from './constants.ts';
 import { evaluateHand, scoringCards } from './hands.ts';
-import { jokerHandSizeMod } from './jokers.ts';
+import {
+  jokerHandSizeMod,
+  jokerInterestCap,
+  jokerInterestRate,
+  jokerSellBonus,
+} from './jokers.ts';
 import { createRng } from './rng.ts';
 import { type BossRules, type ScoreBreakdown, scorePlay } from './score.ts';
+import { sellValue } from './shop.ts';
 import type { Card, JokerInstance, Rng } from './types.ts';
 
 export type RunState = {
@@ -163,4 +174,69 @@ export function discardSelected(run: RunState, blind: BlindState): void {
   }
 
   drawUpTo(blind, handSizeFor(run, blind.boss), run.rng);
+}
+
+export type Payout = {
+  reward: number;
+  handBonus: number;
+  interest: number;
+  total: number;
+};
+
+export function payoutFor(run: RunState, blind: BlindState): Payout {
+  const rate = jokerInterestRate(run) || INTEREST_RATE;
+  const cap = jokerInterestCap(run) || INTEREST_CAP;
+  const reward = blind.def.reward;
+  const handBonus = blind.handsLeft * HAND_BONUS_PER_HAND;
+  const interest = Math.min(cap, Math.floor(run.money / INTEREST_UNIT) * rate);
+  return {
+    reward,
+    handBonus,
+    interest,
+    total: reward + handBonus + interest,
+  };
+}
+
+export function settleBlind(run: RunState, blind: BlindState): Payout {
+  const p = payoutFor(run, blind);
+  run.money += p.total;
+  run.totalRevenue += blind.revenue;
+
+  for (const j of run.jokers) {
+    jokerDef(j.defId).onBlindCleared?.(run, j);
+  }
+
+  return p;
+}
+
+export function advanceBlind(run: RunState): void {
+  run.blindIndex++;
+  if (run.blindIndex > 2) {
+    run.day++;
+    run.blindIndex = 0;
+  }
+  if (run.day > 3) {
+    run.result = 'won';
+  }
+}
+
+export function loseRun(run: RunState): void {
+  run.result = 'lost';
+}
+
+export function addJoker(run: RunState, defId: string): void {
+  if (run.jokers.length >= MAX_JOKERS) return;
+  const joker: JokerInstance = { defId, counters: {} };
+  run.jokers.push(joker);
+  jokerDef(defId).onAcquire?.(run);
+}
+
+export function removeJoker(run: RunState, index: number): number {
+  const joker = run.jokers[index];
+  if (!joker) return 0;
+  const def = jokerDef(joker.defId);
+  const value = sellValue(def, jokerSellBonus(run));
+  run.jokers.splice(index, 1);
+  run.money += value;
+  return value;
 }

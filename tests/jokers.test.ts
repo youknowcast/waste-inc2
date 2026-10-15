@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { JOKERS, jokerDef } from '../src/data/jokers';
 import { evaluateHand, scoringCards } from '../src/game/hands';
 import { NO_BOSS, scorePlay } from '../src/game/score';
+import type { ScoreAcc } from '../src/game/score';
 import type { Card, JokerInstance, Rank, Suit } from '../src/game/types';
 
 const c = (suit: Suit, ...ranks: Rank[]): Card[] =>
@@ -110,7 +111,7 @@ describe('採点に効くジョーカー', () => {
       { jokers: armed },
     );
     expect(s.weightAdd).toBe(30);
-    expect(s.multAdd).toBeCloseTo(0.6);
+    expect(s.multAdd).toBeCloseTo(0.8);
   });
   it('同じジョーカーを2枚持てば2回効く', () => {
     const a = play(c('kenpai', 2), jk('truck-8t'));
@@ -125,5 +126,54 @@ describe('採点に効くジョーカー', () => {
     const s = play(c('kenpai', 9, 9), jk('pipe'));
     expect(s.mult).toBeCloseTo(2.9);
     expect(s.revenue).toBe(81);
+  });
+});
+
+describe('累積ジョーカーの成長', () => {
+  it('アームロール車は捨て札ごとに重さカウンタが +10 される', () => {
+    const jokers = jk('armroll');
+    const run = { money: 0, day: 1, blindIndex: 0, jokers };
+    const self = jokers[0];
+    const def = jokerDef('armroll');
+    for (let i = 0; i < 3; i++) {
+      def.onDiscard?.(run, self);
+    }
+    expect(self.counters.weight).toBe(30);
+  });
+  it('マニフェスト管理は採点ごとに単価カウンタが +0.2 され、加算にも乗る', () => {
+    const jokers = jk('manifest');
+    const self = jokers[0];
+    const def = jokerDef('manifest');
+    const cards = c('kenpai', 9, 9);
+    const handType = evaluateHand(cards);
+    const ctx = {
+      handType,
+      played: cards,
+      scoring: scoringCards(cards, handType),
+      remainingHands: 3,
+      remainingDiscards: 3,
+      boss: NO_BOSS,
+    };
+    const acc1: ScoreAcc = {
+      weightAdd: 0,
+      xWeight: 1,
+      multAdd: 0,
+      xMult: 1,
+      lines: [],
+    };
+    def.onScore?.(ctx, acc1, self, { jokers });
+    expect(self.counters.mult).toBeCloseTo(0.2);
+    expect(acc1.multAdd).toBeCloseTo(0.2);
+
+    const acc2: ScoreAcc = {
+      weightAdd: 0,
+      xWeight: 1,
+      multAdd: 0,
+      xMult: 1,
+      lines: [],
+    };
+    def.onScore?.(ctx, acc2, self, { jokers });
+    expect(self.counters.mult).toBeCloseTo(0.4);
+    expect(acc2.multAdd).toBeCloseTo(0.4);
   });
 });

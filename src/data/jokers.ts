@@ -104,6 +104,9 @@ export const JOKERS: readonly JokerDef[] = [
         acc.lines.push(weightLine('アームロール車', w));
       }
     },
+    onDiscard(_run, self) {
+      self.counters.weight = (self.counters.weight ?? 0) + 10;
+    },
   },
   {
     id: 'trailer',
@@ -164,11 +167,10 @@ export const JOKERS: readonly JokerDef[] = [
     text: '採点するたび 単価 +0.2（累積）',
     price: RARITY_PRICE.UNCOMMON,
     onScore(_ctx, acc, self) {
-      const m = self.counters.mult ?? 0;
-      if (m !== 0) {
-        acc.multAdd += m;
-        acc.lines.push(multLine('マニフェスト管理', m));
-      }
+      self.counters.mult = (self.counters.mult ?? 0) + 0.2;
+      const m = self.counters.mult;
+      acc.multAdd += m;
+      acc.lines.push(multLine('マニフェスト管理', m));
     },
   },
   {

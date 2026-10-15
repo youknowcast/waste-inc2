@@ -1,14 +1,19 @@
+import { jokerRerollDiscount } from '../game/jokers.ts';
 import type { BlindState, Payout, RunState } from '../game/run.ts';
 import {
+  addJoker,
   advanceBlind,
   discardSelected,
+  loseRun,
   playHand,
+  removeJoker,
   settleBlind,
   startBlind,
   startRun,
   toggleSelect,
 } from '../game/run.ts';
 import type { ShopState } from '../game/shop.ts';
+import { canBuy, openShop, rerollCost, rerollShop } from '../game/shop.ts';
 
 export type Screen =
   | 'title'
@@ -56,14 +61,17 @@ export function dispatch(app: AppState, action: Action): void {
   switch (action.kind) {
     case 'newRun': {
       app.run = startRun(action.seed);
+      app.blind = null;
+      app.shop = null;
+      app.payout = null;
+      app.screen = 'blinds';
+      break;
+    }
+    case 'openBlind': {
       app.blind = startBlind(app.run);
       app.shop = null;
       app.payout = null;
       app.screen = 'board';
-      break;
-    }
-    case 'openBlind': {
-      // Task 10: ブラインド選択画面を実装する
       break;
     }
     case 'toggleCard': {
@@ -83,20 +91,55 @@ export function dispatch(app: AppState, action: Action): void {
     }
     case 'settle': {
       if (app.screen !== 'board' || !app.blind) return;
-      app.payout = settleBlind(app.run, app.blind);
-      advanceBlind(app.run);
-      app.screen = 'cashout';
+      if (app.blind.status === 'playing') return;
+      if (app.blind.status === 'cleared') {
+        app.payout = settleBlind(app.run, app.blind);
+        app.screen = 'cashout';
+      } else {
+        loseRun(app.run);
+        app.screen = 'result';
+      }
       break;
     }
     case 'plunder':
+      break;
     case 'next': {
-      // Task 10: shop / result 遷移を実装する
+      if (app.screen === 'cashout') {
+        app.shop = openShop(app.run.rng);
+        app.payout = null;
+        app.screen = 'shop';
+      } else if (app.screen === 'shop') {
+        advanceBlind(app.run);
+        app.shop = null;
+        app.blind = null;
+        if (app.run.result === 'won') {
+          app.screen = 'result';
+        } else {
+          app.screen = 'blinds';
+        }
+      }
       break;
     }
-    case 'buy':
-    case 'reroll':
+    case 'buy': {
+      if (app.screen !== 'shop' || !app.shop) return;
+      const offer = app.shop.offers[action.slot];
+      if (!offer || !canBuy(app.run, offer)) return;
+      app.run.money -= offer.price;
+      addJoker(app.run, offer.defId);
+      app.shop.offers.splice(action.slot, 1);
+      break;
+    }
+    case 'reroll': {
+      if (app.screen !== 'shop' || !app.shop) return;
+      const cost = rerollCost(app.shop, jokerRerollDiscount(app.run));
+      if (app.run.money < cost) return;
+      app.run.money -= cost;
+      rerollShop(app.run.rng, app.shop);
+      break;
+    }
     case 'sell': {
-      // Task 10: ショップアクションを実装する
+      if (app.screen !== 'shop') return;
+      removeJoker(app.run, action.index);
       break;
     }
     case 'toggleSound': {

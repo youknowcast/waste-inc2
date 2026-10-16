@@ -31,7 +31,6 @@ export type Action =
   | { kind: 'play' }
   | { kind: 'discard' }
   | { kind: 'settle' }
-  | { kind: 'plunder' }
   | { kind: 'next' }
   | { kind: 'buy'; slot: number }
   | { kind: 'reroll' }
@@ -117,8 +116,6 @@ export function dispatch(app: AppState, action: Action): void {
       }
       break;
     }
-    case 'plunder':
-      break;
     case 'next': {
       if (app.screen === 'cashout') {
         app.shop = openShop(app.run.rng);
@@ -190,8 +187,6 @@ export function actionFromElement(el: {
       return { kind: 'discard' };
     case 'settle':
       return { kind: 'settle' };
-    case 'plunder':
-      return { kind: 'plunder' };
     case 'next':
       return { kind: 'next' };
     case 'buy': {

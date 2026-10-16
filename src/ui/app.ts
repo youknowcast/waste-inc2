@@ -22,7 +22,8 @@ export type Screen =
   | 'board'
   | 'cashout'
   | 'shop'
-  | 'result';
+  | 'result'
+  | 'rules';
 
 /** いま再生すべき演出の種類。 */
 export type FxKind = 'deal' | 'score';
@@ -38,7 +39,9 @@ export type Action =
   | { kind: 'buy'; slot: number }
   | { kind: 'reroll' }
   | { kind: 'sell'; index: number }
-  | { kind: 'toggleSound' };
+  | { kind: 'toggleSound' }
+  | { kind: 'openRules' }
+  | { kind: 'closeRules' };
 
 export type AppState = {
   screen: Screen;
@@ -49,6 +52,8 @@ export type AppState = {
   soundOn: boolean;
   /** いま再生すべき演出。dispatch のたびにクリアされる */
   fx: FxKind | null;
+  /** あそびかたを開く直前の画面。「もどる」でここへ帰る */
+  returnScreen: Screen | null;
 };
 
 export function createApp(seed: string): AppState {
@@ -60,6 +65,7 @@ export function createApp(seed: string): AppState {
     payout: null,
     soundOn: loadSoundOn(),
     fx: null,
+    returnScreen: null,
   };
 }
 
@@ -173,6 +179,16 @@ export function dispatch(app: AppState, action: Action): void {
       saveSoundOn(app.soundOn);
       break;
     }
+    case 'openRules': {
+      app.returnScreen = app.screen;
+      app.screen = 'rules';
+      break;
+    }
+    case 'closeRules': {
+      app.screen = app.returnScreen ?? 'title';
+      app.returnScreen = null;
+      break;
+    }
   }
 }
 
@@ -214,6 +230,10 @@ export function actionFromElement(el: {
     }
     case 'toggleSound':
       return { kind: 'toggleSound' };
+    case 'openRules':
+      return { kind: 'openRules' };
+    case 'closeRules':
+      return { kind: 'closeRules' };
     default:
       return null;
   }

@@ -1,20 +1,39 @@
-import { blindAt, bossLabel, bossText } from '../data/blinds.ts';
+import { BLINDS, blindAt, bossLabel, bossText } from '../data/blinds.ts';
+import { ITEMS } from '../data/items.ts';
 import type { JokerDef } from '../data/jokers.ts';
-import { jokerDef } from '../data/jokers.ts';
+import { JOKERS, jokerDef } from '../data/jokers.ts';
 import {
   itemName,
+  RANKS,
   rankLabel,
   rankValue,
   SUIT_COLOR,
+  SUIT_LABEL,
   SUIT_MARK,
+  SUITS,
 } from '../game/cards.ts';
-import { MAX_JOKERS, RANK_A_MIN, RANK_S_MIN } from '../game/constants.ts';
+import {
+  DISCARDS_PER_BLIND,
+  HAND_BONUS_PER_HAND,
+  HAND_SIZE,
+  HANDS_PER_BLIND,
+  INTEREST_CAP,
+  INTEREST_RATE,
+  INTEREST_UNIT,
+  MAX_JOKERS,
+  RANK_A_MIN,
+  RANK_S_MIN,
+  RARITY_PRICE,
+  REROLL_BASE,
+  SHOP_SLOTS,
+} from '../game/constants.ts';
+import { HAND_LABEL, HAND_TABLE, HAND_TYPES } from '../game/hands.ts';
 import { jokerRerollDiscount, jokerSellBonus } from '../game/jokers.ts';
 import type { BlindState, Payout, RunState } from '../game/run.ts';
 import type { ScoreBreakdown, ScoreLine } from '../game/score.ts';
 import type { ShopState } from '../game/shop.ts';
 import { rerollCost, sellValue } from '../game/shop.ts';
-import type { Card, JokerInstance } from '../game/types.ts';
+import type { Card, JokerInstance, Rarity } from '../game/types.ts';
 import type { AppState, FxKind } from './app.ts';
 
 /**
@@ -36,6 +55,7 @@ export function renderApp(app: AppState): string {
   return `
     <div class="app-wrap${fxClass}">
       ${renderSoundButton(app)}
+      ${renderHelpButton(app)}
       ${screenHtml}
     </div>
   `;
@@ -57,6 +77,8 @@ function renderScreen(app: AppState): string {
       return app.shop ? renderShop(app.run, app.shop) : '';
     case 'result':
       return renderResult(app.run);
+    case 'rules':
+      return renderRules();
     default:
       return `<div class="placeholder">${app.screen}（未実装）</div>`;
   }
@@ -67,6 +89,12 @@ function renderSoundButton(app: AppState): string {
   return `<button class="sound-toggle" data-action="toggleSound" aria-label="音のON/OFF">${icon}</button>`;
 }
 
+/** あそびかたへの入口。rules 画面では自分自身なので出さない。 */
+function renderHelpButton(app: AppState): string {
+  if (app.screen === 'rules') return '';
+  return `<button class="help-toggle" data-action="openRules" aria-label="あそびかた">？</button>`;
+}
+
 function renderTitle(app: AppState): string {
   return `
     <div class="title-screen">
@@ -74,6 +102,7 @@ function renderTitle(app: AppState): string {
       <p class="slug">waste-inc2</p>
       <p>産業廃棄物ローグライク</p>
       <button class="btn btn-primary" data-action="newRun" data-seed="${escapeHtml(app.run.seed)}">はじめる</button>
+      <button class="btn btn-secondary btn-rules" data-action="openRules">あそびかた</button>
     </div>
   `;
 }
@@ -253,6 +282,180 @@ const BASE_SCORE_LINES = 3;
  */
 function firedJokerNames(score: ScoreBreakdown): Set<string> {
   return new Set(score.lines.slice(BASE_SCORE_LINES).map((line) => line.label));
+}
+
+/** あそびかたに出すレア度の呼称（表示用）。 */
+const RARITY_LABEL: Record<Rarity, string> = {
+  COMMON: 'コモン',
+  UNCOMMON: 'アンコモン',
+  RARE: 'レア',
+};
+
+function renderRules(): string {
+  return `
+    <div class="rules-screen">
+      <div class="screen-title">あそびかた</div>
+      ${rulesIntro()}
+      ${rulesDay()}
+      ${rulesScore()}
+      ${rulesHands()}
+      ${rulesBoss()}
+      ${rulesMoney()}
+      ${rulesJokers()}
+      ${rulesItems()}
+      <div class="btns rules-back">
+        <button class="btn btn-primary" data-action="closeRules">もどる</button>
+      </div>
+    </div>
+  `;
+}
+
+function rulesSection(title: string, body: string): string {
+  return `
+    <section class="rules-sec">
+      <h2>${escapeHtml(title)}</h2>
+      ${body}
+    </section>
+  `;
+}
+
+function rulesIntro(): string {
+  return rulesSection(
+    'ひとこと',
+    `<p>産廃の配車担当になって、9つの現場を回る。手札から5枚まで出して積載パターンを作り、<b>重さ × 単価</b> で売上を弾けさせる。1プレイ10〜15分。届かなければその場で解散。</p>`,
+  );
+}
+
+function rulesDay(): string {
+  const rows = BLINDS.map(
+    (blind) => `
+      <div class="rules-blind" data-blind="d${blind.day}-${blind.index}">
+        <span class="rb-day">${blind.day}日目</span>
+        <span class="rb-time">${escapeHtml(timeLabel(blind.index))}</span>
+        <span class="rb-name">${escapeHtml(blind.name)}</span>
+        <span class="rb-goal">${blind.goal}万円</span>
+        <span class="rb-reward">報酬 ${blind.reward}万円</span>
+      </div>
+    `,
+  ).join('');
+  return rulesSection(
+    '1日の流れ',
+    `<p>1営業日 = 3便（午前便 → 午後便 → 締切の元請）、3日 = 9便。各便は手札 ${HAND_SIZE} 枚で始まり、${HANDS_PER_BLIND} 回搬入でき、${DISCARDS_PER_BLIND} 回捨てられる。</p>
+     <div class="rules-blinds">${rows}</div>`,
+  );
+}
+
+function rulesScore(): string {
+  const loads = [9, 8, 10];
+  const weight = loads.reduce((sum, t) => sum + t, 0);
+  const mult = 4;
+  return rulesSection(
+    '得点は 重さ × 単価',
+    `<div class="rules-formula">売上 = 重さ × 単価</div>
+     <p>重さに乗るのは<b>役を構成したカードだけ</b>。数字はそのまま、絵札（J/Q/K）は ${rankValue(11)}t、A は ${rankValue(14)}t。単価は役の基礎値から始まり、ジョーカーで盛る。</p>
+     <div class="rules-example">
+       <span>${loads.join('t + ')}t</span>
+       <span class="op">=</span>
+       <span class="w">重さ ${weight}t</span>
+       <span class="op">×</span>
+       <span class="m">単価 ${mult}</span>
+       <span class="op">=</span>
+       <span class="r">${weight * mult}万円</span>
+     </div>`,
+  );
+}
+
+function rulesHands(): string {
+  const rows = HAND_TYPES.map((type) => {
+    const table = HAND_TABLE[type];
+    return `
+      <div class="rules-hand" data-hand="${type}">
+        <span class="rh-name">${escapeHtml(HAND_LABEL[type])}</span>
+        <span class="rh-w">重さ ${table.baseWeight}</span>
+        <span class="rh-m">単価 ${table.baseMult}</span>
+      </div>
+    `;
+  }).join('');
+  return rulesSection(
+    '狙う役と基礎の数字',
+    `<p>上にある役ほど出しやすく、下ほど強い。基礎の重さに基礎の単価を掛けたところから始まる。</p>
+     <div class="rules-hands">${rows}</div>`,
+  );
+}
+
+function rulesBoss(): string {
+  const rows = BLINDS.filter((blind) => blind.index === 2)
+    .map((blind) => {
+      if (!blind.bossId) return '';
+      return `
+        <div class="rules-boss" data-boss="${blind.bossId}">
+          <div class="rb-head">${blind.day}日目 ${escapeHtml(blind.name)}</div>
+          <div class="rb-label">${escapeHtml(bossLabel(blind.bossId))}</div>
+          <div class="rb-text">${escapeHtml(bossText(blind.bossId))}</div>
+        </div>
+      `;
+    })
+    .join('');
+  return rulesSection(
+    '締切の縛り',
+    `<p>各日の締切（3便目）は元請の縛りつき。突破できなければその場で解散。</p>
+     <div class="rules-bosses">${rows}</div>`,
+  );
+}
+
+function rulesMoney(): string {
+  const rarityRows = Object.entries(RARITY_PRICE)
+    .map(
+      ([rarity, price]) =>
+        `<span class="rules-rarity">${escapeHtml(RARITY_LABEL[rarity as Rarity])} ${price}万円</span>`,
+    )
+    .join('');
+  return rulesSection(
+    'お金',
+    `<ul class="rules-list">
+       <li>便を突破すると上の表の<b>報酬</b>が入る。</li>
+       <li><b>手数ボーナス</b>：残した搬入1回につき ${HAND_BONUS_PER_HAND}万円。</li>
+       <li><b>利息</b>：所持金 ${INTEREST_UNIT}万円ごとに ${INTEREST_RATE}万円、上限 ${INTEREST_CAP}万円。</li>
+       <li><b>ショップ</b>：各便の突破後に開く。品揃えは ${SHOP_SLOTS} 枠。</li>
+       <li><b>価格</b>：${rarityRows}</li>
+       <li><b>リロール</b>：${REROLL_BASE}万円から。</li>
+       <li><b>ジョーカー枠</b>：${MAX_JOKERS}枚まで。</li>
+     </ul>`,
+  );
+}
+
+function rulesJokers(): string {
+  const cards = JOKERS.map(
+    (joker) => `
+      <div class="rules-joker">
+        <div class="jn">${escapeHtml(joker.name)}</div>
+        <div class="je">${escapeHtml(joker.text)}</div>
+      </div>
+    `,
+  ).join('');
+  return rulesSection(
+    `ジョーカー ${JOKERS.length}枚`,
+    `<p>積載・交渉・分類シナジー・経済の4系統。${MAX_JOKERS}枚まで持ち歩ける。</p>
+     <div class="rules-jokers">${cards}</div>`,
+  );
+}
+
+function rulesItems(): string {
+  const groups = SUITS.map(
+    (suit) => `
+      <div class="rules-suit" data-suit="${suit}">
+        <div class="rs-head" style="color:${SUIT_COLOR[suit]}">${SUIT_MARK[suit]} ${escapeHtml(SUIT_LABEL[suit])}</div>
+        <div class="rs-items">
+          ${RANKS.map((rank) => `<span class="rs-item"><b>${rankLabel(rank)}</b> ${escapeHtml(ITEMS[suit][rank])}</span>`).join('')}
+        </div>
+      </div>
+    `,
+  ).join('');
+  return rulesSection(
+    `品目 ${SUITS.length * RANKS.length}枚`,
+    `<p>4分類 × 13ランク。数字が重さそのもので、絵札は ${rankValue(11)}t、A は ${rankValue(14)}t。<b>4分類は採点上等価</b>で強弱は無い（らしさはジョーカー側にある）。</p>
+     <div class="rules-suits">${groups}</div>`,
+  );
 }
 
 function renderBoard(

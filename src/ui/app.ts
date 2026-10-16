@@ -14,6 +14,7 @@ import {
 } from '../game/run.ts';
 import type { ShopState } from '../game/shop.ts';
 import { canBuy, openShop, rerollCost, rerollShop } from '../game/shop.ts';
+import { loadSoundOn, playSound, saveSoundOn } from './sound.ts';
 
 export type Screen =
   | 'title'
@@ -53,7 +54,7 @@ export function createApp(seed: string): AppState {
     blind: null,
     shop: null,
     payout: null,
-    soundOn: true,
+    soundOn: loadSoundOn(),
   };
 }
 
@@ -72,21 +73,36 @@ export function dispatch(app: AppState, action: Action): void {
       app.shop = null;
       app.payout = null;
       app.screen = 'board';
+      for (let i = 0; app.blind && i < app.blind.hand.length; i++) {
+        setTimeout(() => playSound('deal'), i * 40);
+      }
       break;
     }
     case 'toggleCard': {
       if (app.screen !== 'board' || !app.blind) return;
       toggleSelect(app.blind, action.cardId);
+      playSound('pick');
       break;
     }
     case 'play': {
       if (app.screen !== 'board' || !app.blind) return;
-      playHand(app.run, app.blind);
+      const score = playHand(app.run, app.blind);
+      if (score) {
+        setTimeout(() => playSound('scoreWeight'), 80);
+        setTimeout(() => playSound('scoreMult'), 240);
+        setTimeout(() => playSound('scoreRevenue'), 400);
+        if (app.blind.status === 'cleared') {
+          setTimeout(() => playSound('clear'), 650);
+        } else if (app.blind.status === 'failed') {
+          setTimeout(() => playSound('fail'), 500);
+        }
+      }
       break;
     }
     case 'discard': {
       if (app.screen !== 'board' || !app.blind) return;
       discardSelected(app.run, app.blind);
+      playSound('discard');
       break;
     }
     case 'settle': {
@@ -127,6 +143,7 @@ export function dispatch(app: AppState, action: Action): void {
       app.run.money -= offer.price;
       addJoker(app.run, offer.defId);
       app.shop.offers.splice(action.slot, 1);
+      playSound('buy');
       break;
     }
     case 'reroll': {
@@ -135,6 +152,7 @@ export function dispatch(app: AppState, action: Action): void {
       if (app.run.money < cost) return;
       app.run.money -= cost;
       rerollShop(app.run.rng, app.shop);
+      playSound('buy');
       break;
     }
     case 'sell': {
@@ -144,6 +162,7 @@ export function dispatch(app: AppState, action: Action): void {
     }
     case 'toggleSound': {
       app.soundOn = !app.soundOn;
+      saveSoundOn(app.soundOn);
       break;
     }
   }

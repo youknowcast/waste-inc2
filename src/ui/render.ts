@@ -18,6 +18,16 @@ import type { Card, JokerInstance } from '../game/types.ts';
 import type { AppState } from './app.ts';
 
 export function renderApp(app: AppState): string {
+  const screenHtml = renderScreen(app);
+  return `
+    <div class="app-wrap">
+      ${renderSoundButton(app)}
+      ${screenHtml}
+    </div>
+  `;
+}
+
+function renderScreen(app: AppState): string {
   switch (app.screen) {
     case 'title':
       return renderTitle(app);
@@ -34,6 +44,11 @@ export function renderApp(app: AppState): string {
     default:
       return `<div class="placeholder">${app.screen}（未実装）</div>`;
   }
+}
+
+function renderSoundButton(app: AppState): string {
+  const icon = app.soundOn ? '🔊' : '🔇';
+  return `<button class="sound-toggle" data-action="toggleSound" aria-label="音のON/OFF">${icon}</button>`;
 }
 
 function renderTitle(app: AppState): string {

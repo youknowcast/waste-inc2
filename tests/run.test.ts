@@ -4,6 +4,7 @@ import {
   addJoker,
   advanceBlind,
   discardSelected,
+  loseRun,
   payoutFor,
   removeJoker,
   settleBlind,
@@ -84,6 +85,20 @@ describe('settleBlind / advanceBlind', () => {
     run.blindIndex = 2;
     advanceBlind(run);
     expect(run.result).toBe('won');
+  });
+});
+
+describe('loseRun', () => {
+  it('未達でも売上を総売上に足し、所持金は増やさない', () => {
+    const run = startRun('s');
+    const blind = startBlind(run);
+    blind.revenue = 57;
+    blind.status = 'failed';
+    const money = run.money;
+    loseRun(run, blind);
+    expect(run.totalRevenue).toBe(57);
+    expect(run.money).toBe(money);
+    expect(run.result).toBe('lost');
   });
 });
 

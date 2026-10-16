@@ -111,7 +111,7 @@ export function dispatch(app: AppState, action: Action): void {
         app.payout = settleBlind(app.run, app.blind);
         app.screen = 'cashout';
       } else {
-        loseRun(app.run);
+        loseRun(app.run, app.blind);
         app.screen = 'result';
       }
       break;

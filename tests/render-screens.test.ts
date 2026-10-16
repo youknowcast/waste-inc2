@@ -70,6 +70,22 @@ describe('画面遷移', () => {
     expect(app.screen).toBe('result');
     expect(renderApp(app)).toContain('解散');
   });
+  it('未達でも失敗した便の売上が総売上に入り、所持金は増えない', () => {
+    const app = createApp('s');
+    dispatch(app, { kind: 'newRun', seed: 's' });
+    dispatch(app, { kind: 'openBlind' });
+    const blind = app.blind;
+    expect(blind).not.toBeNull();
+    if (!blind) throw new Error('blind is null');
+    blind.revenue = 123;
+    blind.status = 'failed';
+    const money = app.run.money;
+    dispatch(app, { kind: 'settle' });
+    expect(app.screen).toBe('result');
+    expect(app.run.totalRevenue).toBe(123);
+    expect(app.run.money).toBe(money);
+    expect(renderApp(app)).toContain('123');
+  });
 });
 
 describe('リザルトの突破した便', () => {

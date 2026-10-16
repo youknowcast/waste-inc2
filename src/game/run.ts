@@ -220,7 +220,9 @@ export function advanceBlind(run: RunState): void {
   }
 }
 
-export function loseRun(run: RunState): void {
+export function loseRun(run: RunState, blind: BlindState): void {
+  // 未達でも搬入した分の売上は総売上に残す（所持金には入らない）。
+  run.totalRevenue += blind.revenue;
   run.result = 'lost';
 }
 

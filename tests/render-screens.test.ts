@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
+import { BLINDS } from '../src/data/blinds';
 import { RANK_A_MIN, RANK_S_MIN } from '../src/game/constants';
 import { openShop } from '../src/game/shop';
 import { createApp, dispatch } from '../src/ui/app';
@@ -135,6 +136,14 @@ describe('リザルトのランク', () => {
 
   it('RANK_A_MIN ちょうどは A', () => {
     expect(renderApp(rankApp(RANK_A_MIN))).toContain('ランク <b>A</b>');
+  });
+
+  it('目標合計ちょうど（全便を最小限で突破）は A になり B にはならない', () => {
+    const goalTotal = BLINDS.reduce((sum, b) => sum + b.goal, 0);
+    expect(goalTotal).toBe(RANK_A_MIN);
+    const html = renderApp(rankApp(goalTotal));
+    expect(html).toContain('ランク <b>A</b>');
+    expect(html).not.toContain('ランク <b>B</b>');
   });
 
   it('RANK_S_MIN 未満は A', () => {

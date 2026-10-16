@@ -1,3 +1,4 @@
+import { BLINDS } from '../data/blinds.ts';
 import type { Rarity } from './types.ts';
 
 export const START_MONEY = 4;
@@ -14,8 +15,10 @@ export const REROLL_STEP = 1;
 export const SHOP_SLOTS = 2;
 export const SPECIAL_CHANCE = 0.1;
 
-// リザルトのランク境界（総売上・万円）。B は RANK_A_MIN 未満、S は RANK_S_MIN 以上。
-export const RANK_A_MIN = 15000;
+// リザルトのランク境界（総売上・万円）。
+// RANK_A_MIN は目標金額の合計。これを下回る＝完走できていない（B）。
+export const RANK_A_MIN = BLINDS.reduce((sum, b) => sum + b.goal, 0);
+// RANK_S_MIN は S の閾値。ビルドが刺さったと言える総売上。
 export const RANK_S_MIN = 300000;
 
 export const RARITY_PRICE: Record<Rarity, number> = {

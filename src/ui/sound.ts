@@ -15,17 +15,21 @@ let ctx: AudioContext | null = null;
 let unlocked = false;
 
 export function unlockAudio(): void {
-  if (typeof window === 'undefined') return;
-  const AC = (window as unknown as { AudioContext?: typeof AudioContext })
-    .AudioContext;
-  if (!AC) return;
-  if (!ctx) {
-    ctx = new AC();
+  try {
+    if (typeof window === 'undefined') return;
+    const AC = (window as unknown as { AudioContext?: typeof AudioContext })
+      .AudioContext;
+    if (!AC) return;
+    if (!ctx) {
+      ctx = new AC();
+    }
+    if (ctx.state === 'suspended') {
+      void ctx.resume();
+    }
+    unlocked = true;
+  } catch {
+    // AudioContext の作成／resume に失敗しても無視する。
   }
-  if (ctx.state === 'suspended') {
-    void ctx.resume();
-  }
-  unlocked = true;
 }
 
 export function isAudioUnlocked(): boolean {
@@ -33,11 +37,11 @@ export function isAudioUnlocked(): boolean {
 }
 
 export function loadSoundOn(): boolean {
-  if (typeof window === 'undefined') return true;
-  const storage = (window as unknown as { localStorage?: Storage })
-    .localStorage;
-  if (!storage || typeof storage.getItem !== 'function') return true;
   try {
+    if (typeof window === 'undefined') return true;
+    const storage = (window as unknown as { localStorage?: Storage })
+      .localStorage;
+    if (!storage || typeof storage.getItem !== 'function') return true;
     const raw = storage.getItem(STORAGE_KEY);
     return raw === null || raw !== 'false';
   } catch {
@@ -46,11 +50,11 @@ export function loadSoundOn(): boolean {
 }
 
 export function saveSoundOn(on: boolean): void {
-  if (typeof window === 'undefined') return;
-  const storage = (window as unknown as { localStorage?: Storage })
-    .localStorage;
-  if (!storage || typeof storage.setItem !== 'function') return;
   try {
+    if (typeof window === 'undefined') return;
+    const storage = (window as unknown as { localStorage?: Storage })
+      .localStorage;
+    if (!storage || typeof storage.setItem !== 'function') return;
     storage.setItem(STORAGE_KEY, String(on));
   } catch {
     // localStorage が無効な環境では保存を諦める。

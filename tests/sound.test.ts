@@ -51,4 +51,36 @@ describe('sound', () => {
   it('未解錠でも例外を投げない', () => {
     expect(() => playSound('clear')).not.toThrow();
   });
+  it('localStorage プロパティへのアクセス自体が失敗しても例外を投げない', () => {
+    const prev = Object.getOwnPropertyDescriptor(window, 'localStorage');
+    Object.defineProperty(window, 'localStorage', {
+      configurable: true,
+      get: () => {
+        throw new Error('Storage access denied');
+      },
+    });
+    try {
+      expect(loadSoundOn()).toBe(true);
+      expect(() => saveSoundOn(false)).not.toThrow();
+    } finally {
+      if (prev) {
+        Object.defineProperty(window, 'localStorage', prev);
+      }
+    }
+  });
+  it('AudioContext が無くても unlockAudio は例外を投げない', () => {
+    const prev = Object.getOwnPropertyDescriptor(window, 'AudioContext');
+    Object.defineProperty(window, 'AudioContext', {
+      configurable: true,
+      writable: true,
+      value: undefined,
+    });
+    try {
+      expect(() => unlockAudio()).not.toThrow();
+    } finally {
+      if (prev) {
+        Object.defineProperty(window, 'AudioContext', prev);
+      }
+    }
+  });
 });

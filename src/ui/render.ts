@@ -17,6 +17,19 @@ import { rerollCost, sellValue } from '../game/shop.ts';
 import type { Card, JokerInstance } from '../game/types.ts';
 import type { AppState } from './app.ts';
 
+/**
+ * HTML に値を差し込む前のエスケープ。
+ * シードは `?seed=` から来るため、任意の文字列が入りうる。
+ */
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export function renderApp(app: AppState): string {
   const screenHtml = renderScreen(app);
   return `
@@ -57,7 +70,7 @@ function renderTitle(app: AppState): string {
       <h1>WASTE INC. II</h1>
       <p class="slug">waste-inc2</p>
       <p>産業廃棄物ローグライク</p>
-      <button class="btn btn-primary" data-action="newRun" data-seed="${app.run.seed}">はじめる</button>
+      <button class="btn btn-primary" data-action="newRun" data-seed="${escapeHtml(app.run.seed)}">はじめる</button>
     </div>
   `;
 }
@@ -202,14 +215,14 @@ function renderResult(run: RunState): string {
         <div class="line"><span>総売上</span><span>${run.totalRevenue}万円</span></div>
         <div class="line"><span>残金</span><span>${run.money}万円</span></div>
         <div class="line"><span>突破した便</span><span>${cleared}／9</span></div>
-        <div class="line"><span>シード</span><span>${run.seed}</span></div>
+        <div class="line"><span>シード</span><span>${escapeHtml(run.seed)}</span></div>
       </div>
       ${run.result === 'lost' ? '<div class="result-fate">解散</div>' : ''}
       <div class="owned-list">
         ${renderShopJokers(run)}
       </div>
       <div class="btns">
-        <button class="btn btn-primary" data-action="newRun" data-seed="${run.seed}">もう一度</button>
+        <button class="btn btn-primary" data-action="newRun" data-seed="${escapeHtml(run.seed)}">もう一度</button>
       </div>
     </div>
   `;

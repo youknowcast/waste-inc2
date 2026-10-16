@@ -102,3 +102,44 @@ describe('リザルトの突破した便', () => {
     expect(renderApp(app)).toContain('9／9');
   });
 });
+
+describe('シードのエスケープ', () => {
+  // 「"」で属性を抜け、「<」でタグを開こうとするシード。
+  const evil = 'a"><img src=x onerror=alert(1)>';
+
+  it('タイトルの data-seed が属性を抜け出さない', () => {
+    const html = renderApp(createApp(evil));
+    expect(html).not.toContain('<img src=x onerror=alert(1)>');
+    expect(html).not.toContain('data-seed="a"');
+    expect(html).toContain(
+      'data-seed="a&quot;&gt;&lt;img src=x onerror=alert(1)&gt;"',
+    );
+  });
+
+  it('エスケープしても dataset から元のシードが読める', () => {
+    const html = renderApp(createApp(evil));
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    expect(doc.querySelector('img')).toBeNull();
+    const button = doc.querySelector('[data-action="newRun"]');
+    expect(button?.getAttribute('data-seed')).toBe(evil);
+  });
+
+  it('リザルトのシード表示にもマークアップが混ざらない', () => {
+    const app = createApp(evil);
+    app.screen = 'result';
+    const html = renderApp(app);
+    expect(html).not.toContain('<img src=x onerror=alert(1)>');
+    expect(html).toContain('a&quot;&gt;&lt;img src=x onerror=alert(1)&gt;');
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    expect(doc.querySelector('img')).toBeNull();
+  });
+
+  it('リザルトの「もう一度」の data-seed もエスケープされる', () => {
+    const app = createApp(evil);
+    app.screen = 'result';
+    const html = renderApp(app);
+    expect(html).toContain(
+      'data-seed="a&quot;&gt;&lt;img src=x onerror=alert(1)&gt;"',
+    );
+  });
+});

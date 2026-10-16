@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
+import { RANK_A_MIN, RANK_S_MIN } from '../src/game/constants';
 import { openShop } from '../src/game/shop';
 import { createApp, dispatch } from '../src/ui/app';
 import { renderApp } from '../src/ui/render';
@@ -117,6 +118,31 @@ describe('リザルトの突破した便', () => {
     app.run.blindIndex = 0;
     app.run.result = 'won';
     expect(renderApp(app)).toContain('9／9');
+  });
+});
+
+describe('リザルトのランク', () => {
+  function rankApp(totalRevenue: number): ReturnType<typeof createApp> {
+    const app = createApp('s');
+    app.screen = 'result';
+    app.run.totalRevenue = totalRevenue;
+    return app;
+  }
+
+  it('RANK_A_MIN 未満は B', () => {
+    expect(renderApp(rankApp(RANK_A_MIN - 1))).toContain('ランク <b>B</b>');
+  });
+
+  it('RANK_A_MIN ちょうどは A', () => {
+    expect(renderApp(rankApp(RANK_A_MIN))).toContain('ランク <b>A</b>');
+  });
+
+  it('RANK_S_MIN 未満は A', () => {
+    expect(renderApp(rankApp(RANK_S_MIN - 1))).toContain('ランク <b>A</b>');
+  });
+
+  it('RANK_S_MIN ちょうどは S', () => {
+    expect(renderApp(rankApp(RANK_S_MIN))).toContain('ランク <b>S</b>');
   });
 });
 

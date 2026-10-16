@@ -14,6 +14,10 @@ export const REROLL_STEP = 1;
 export const SHOP_SLOTS = 2;
 export const SPECIAL_CHANCE = 0.1;
 
+// リザルトのランク境界（総売上・万円）。B は RANK_A_MIN 未満、S は RANK_S_MIN 以上。
+export const RANK_A_MIN = 15000;
+export const RANK_S_MIN = 300000;
+
 export const RARITY_PRICE: Record<Rarity, number> = {
   COMMON: 4,
   UNCOMMON: 6,

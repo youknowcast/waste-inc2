@@ -8,7 +8,7 @@ import {
   SUIT_COLOR,
   SUIT_MARK,
 } from '../game/cards.ts';
-import { MAX_JOKERS } from '../game/constants.ts';
+import { MAX_JOKERS, RANK_A_MIN, RANK_S_MIN } from '../game/constants.ts';
 import { jokerRerollDiscount, jokerSellBonus } from '../game/jokers.ts';
 import type { BlindState, Payout, RunState } from '../game/run.ts';
 import type { ScoreBreakdown, ScoreLine } from '../game/score.ts';
@@ -214,7 +214,11 @@ function renderResult(run: RunState): string {
   const cleared =
     (run.day - 1) * 3 + (run.result === 'lost' ? run.blindIndex : 0);
   const rank =
-    run.totalRevenue < 8000 ? 'B' : run.totalRevenue < 15000 ? 'A' : 'S';
+    run.totalRevenue < RANK_A_MIN
+      ? 'B'
+      : run.totalRevenue < RANK_S_MIN
+        ? 'A'
+        : 'S';
   return `
     <div class="result-screen">
       <div class="screen-title">リザルト</div>

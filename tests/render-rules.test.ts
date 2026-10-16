@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { BLINDS, bossLabel, bossText } from '../src/data/blinds';
 import { ITEMS } from '../src/data/items';
 import { JOKERS } from '../src/data/jokers';
-import { RANKS, SUIT_LABEL, SUITS } from '../src/game/cards';
+import { RANKS, rankValue, SUIT_LABEL, SUITS } from '../src/game/cards';
 import { HAND_LABEL, HAND_TABLE, HAND_TYPES } from '../src/game/hands';
 import { actionFromElement, createApp, dispatch } from '../src/ui/app';
 import { renderApp } from '../src/ui/render';
@@ -56,9 +56,11 @@ describe('あそびかたの導線', () => {
   });
 
   it('タイトルに「あそびかた」ボタンがある', () => {
-    const html = renderApp(createApp('s'));
-    expect(html).toContain('あそびかた');
-    expect(html).toContain('data-action="openRules"');
+    const doc = parse(renderApp(createApp('s')));
+    const rulesButton = doc.querySelector('.btn-rules');
+    expect(rulesButton).not.toBeNull();
+    expect(rulesButton?.textContent?.trim()).toBe('あそびかた');
+    expect(rulesButton?.getAttribute('data-action')).toBe('openRules');
   });
 
   it('actionFromElement が openRules / closeRules を拾う', () => {
@@ -89,9 +91,27 @@ describe('あそびかたの中身', () => {
     for (const type of HAND_TYPES) {
       const row = doc.querySelector(`[data-hand="${type}"]`);
       expect(row).not.toBeNull();
-      expect(row?.textContent).toContain(String(HAND_TABLE[type].baseWeight));
-      expect(row?.textContent).toContain(String(HAND_TABLE[type].baseMult));
+      const weight = row?.querySelector('.rh-w');
+      const mult = row?.querySelector('.rh-m');
+      expect(weight?.textContent).toBe(`重さ ${HAND_TABLE[type].baseWeight}`);
+      expect(mult?.textContent).toBe(`単価 ${HAND_TABLE[type].baseMult}`);
     }
+  });
+
+  it('得点の実例が HAND_TABLE と一致する（重さ = 基礎 + カード）', () => {
+    const doc = parse(renderApp(rulesApp()));
+    const example = doc.querySelector('.rules-example');
+    expect(example).not.toBeNull();
+    const base = HAND_TABLE.three.baseWeight;
+    const mult = HAND_TABLE.three.baseMult;
+    const cardWeight = rankValue(9) * 3;
+    const weight = base + cardWeight;
+    const text = example?.textContent ?? '';
+    expect(text).toContain(`役の基礎 ${base}t`);
+    expect(text).toContain(`カード ${cardWeight}t`);
+    expect(text).toContain(`重さ ${weight}t`);
+    expect(text).toContain(`単価 ${mult}`);
+    expect(text).toContain(`${weight * mult}万円`);
   });
 
   it('20枚すべてのジョーカー名が出る', () => {

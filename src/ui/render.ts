@@ -346,15 +346,22 @@ function rulesDay(): string {
 }
 
 function rulesScore(): string {
-  const loads = [9, 8, 10];
-  const weight = loads.reduce((sum, t) => sum + t, 0);
-  const mult = 4;
+  const base = HAND_TABLE.three.baseWeight;
+  const mult = HAND_TABLE.three.baseMult;
+  const cardValue = rankValue(9);
+  const cardCount = 3;
+  const cardWeight = cardValue * cardCount;
+  const weight = base + cardWeight;
   return rulesSection(
     '得点は 重さ × 単価',
     `<div class="rules-formula">売上 = 重さ × 単価</div>
-     <p>重さに乗るのは<b>役を構成したカードだけ</b>。数字はそのまま、絵札（J/Q/K）は ${rankValue(11)}t、A は ${rankValue(14)}t。単価は役の基礎値から始まり、ジョーカーで盛る。</p>
+     <p>重さは<b>役の基礎の重さ ＋ 出したカードの重さ</b>。役ごとに決まった基礎の重さに、出したカードの重さが乗る。カードの数字はそのまま、絵札（J/Q/K）は ${rankValue(11)}t、A は ${rankValue(14)}t。単価は役の基礎値から始まり、ジョーカーで盛る。</p>
      <div class="rules-example">
-       <span>${loads.join('t + ')}t</span>
+       <span>${escapeHtml(HAND_LABEL.three)}（${cardValue}t を${cardCount}枚）</span>
+       <span class="op">→</span>
+       <span>役の基礎 ${base}t</span>
+       <span class="op">+</span>
+       <span>カード ${cardWeight}t</span>
        <span class="op">=</span>
        <span class="w">重さ ${weight}t</span>
        <span class="op">×</span>
@@ -378,7 +385,7 @@ function rulesHands(): string {
   }).join('');
   return rulesSection(
     '狙う役と基礎の数字',
-    `<p>上にある役ほど出しやすく、下ほど強い。基礎の重さに基礎の単価を掛けたところから始まる。</p>
+    `<p>上にある役ほど出しやすく、下にあるほど強い（ただし最下段の2役は同じ基礎値で同格）。得点は <b>役の基礎の重さ ＋ 出したカードの重さ</b> に、役の基礎の単価を掛けたところから始まる。</p>
      <div class="rules-hands">${rows}</div>`,
   );
 }

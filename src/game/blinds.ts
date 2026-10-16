@@ -14,6 +14,6 @@ export function bossRules(def: BlindDef): BossRules {
     case 'storm':
       return { debuffedSuits: [], baseMultMultiplier: 1, handSizeMod: -1 };
     default:
-      return { ...NO_BOSS };
+      return { ...NO_BOSS, debuffedSuits: [] };
   }
 }

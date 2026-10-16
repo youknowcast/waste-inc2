@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { BLINDS, blindAt, bossLabel, bossText } from '../src/data/blinds';
 import { bossRules } from '../src/game/blinds';
+import { NO_BOSS } from '../src/game/score';
 
 describe('BLINDS', () => {
   it('3日 × 3便 = 9件', () => expect(BLINDS).toHaveLength(9));
@@ -39,5 +40,12 @@ describe('bossRules', () => {
     expect(r.debuffedSuits).toEqual([]);
     expect(r.baseMultMultiplier).toBe(1);
     expect(r.handSizeMod).toBe(0);
+  });
+  it('通常の便は NO_BOSS と別の debuffedSuits 配列を返す', () => {
+    const r = bossRules(blindAt(2, 1));
+    expect(r.debuffedSuits).not.toBe(NO_BOSS.debuffedSuits);
+    // 呼び出し側が書き換えても共有定数 NO_BOSS は汚れない。
+    r.debuffedSuits.push('tokkan');
+    expect(NO_BOSS.debuffedSuits).toEqual([]);
   });
 });

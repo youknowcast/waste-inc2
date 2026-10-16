@@ -143,3 +143,14 @@ describe('シードのエスケープ', () => {
     );
   });
 });
+
+describe('リザルトの所持ジョーカー', () => {
+  it('所持ジョーカーを売るボタンなしで表示する', () => {
+    const app = createApp('s');
+    app.screen = 'result';
+    app.run.jokers.push({ defId: 'truck-8t', counters: {} });
+    const html = renderApp(app);
+    expect(html).toContain('8t 深ダンプ');
+    expect(html).not.toContain('data-action="sell"');
+  });
+});

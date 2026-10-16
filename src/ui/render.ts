@@ -151,7 +151,7 @@ function renderShop(run: RunState, shop: ShopState): string {
       </div>
       <div class="status-bar">所持金 <b>${run.money}万円</b></div>
       <div class="shop-jokers">
-        ${renderShopJokers(run)}
+        ${renderOwnedJokers(run)}
       </div>
     </div>
   `;
@@ -178,8 +178,12 @@ function renderShopOffer(
   `;
 }
 
-function renderShopJokers(run: RunState): string {
+function renderOwnedJokers(
+  run: RunState,
+  options: { sellable?: boolean } = {},
+): string {
   if (run.jokers.length === 0) return '';
+  const sellable = options.sellable ?? true;
   return `
     <div class="owned-title">所持ジョーカー</div>
     <div class="owned-list">
@@ -187,13 +191,16 @@ function renderShopJokers(run: RunState): string {
         .map((j, i) => {
           const def = jokerDef(j.defId);
           const value = sellValue(def, jokerSellBonus(run));
+          const sellButton = sellable
+            ? `<button class="btn btn-secondary" data-action="sell" data-index="${i}">売る ${value}万円</button>`
+            : '';
           return `
             <div class="owned-joker">
               <div class="jc">
                 <div class="jn">${def.name}</div>
                 <div class="je">${def.text}</div>
               </div>
-              <button class="btn btn-secondary" data-action="sell" data-index="${i}">売る ${value}万円</button>
+              ${sellButton}
             </div>
           `;
         })
@@ -219,7 +226,7 @@ function renderResult(run: RunState): string {
       </div>
       ${run.result === 'lost' ? '<div class="result-fate">解散</div>' : ''}
       <div class="owned-list">
-        ${renderShopJokers(run)}
+        ${renderOwnedJokers(run, { sellable: false })}
       </div>
       <div class="btns">
         <button class="btn btn-primary" data-action="newRun" data-seed="${escapeHtml(run.seed)}">もう一度</button>

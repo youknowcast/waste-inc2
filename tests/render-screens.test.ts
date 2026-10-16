@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
+import { openShop } from '../src/game/shop';
 import { createApp, dispatch } from '../src/ui/app';
 import { renderApp } from '../src/ui/render';
 
@@ -152,5 +153,25 @@ describe('リザルトの所持ジョーカー', () => {
     const html = renderApp(app);
     expect(html).toContain('8t 深ダンプ');
     expect(html).not.toContain('data-action="sell"');
+  });
+});
+
+describe('ショップのリロール', () => {
+  function shopApp(money: number) {
+    const app = createApp('s');
+    app.screen = 'shop';
+    app.shop = openShop(app.run.rng);
+    app.run.money = money;
+    return app;
+  }
+
+  it('リロール代を払えないときは disabled', () => {
+    // リロールは3万円から。
+    expect(renderApp(shopApp(0))).toContain('data-action="reroll" disabled');
+  });
+
+  it('リロール代を払えるときは disabled でない', () => {
+    const html = renderApp(shopApp(999));
+    expect(html).not.toContain('data-action="reroll" disabled');
   });
 });

@@ -139,6 +139,7 @@ function renderCashout(run: RunState, payout: Payout): string {
 
 function renderShop(run: RunState, shop: ShopState): string {
   const reroll = rerollCost(shop, jokerRerollDiscount(run));
+  const canReroll = run.money >= reroll;
   return `
     <div class="shop-screen">
       <div class="screen-title">ショップ</div>
@@ -146,7 +147,7 @@ function renderShop(run: RunState, shop: ShopState): string {
         ${shop.offers.map((offer, i) => renderShopOffer(run, offer, i)).join('')}
       </div>
       <div class="btns">
-        <button class="btn btn-secondary" data-action="reroll">リロール ${reroll}万円</button>
+        <button class="btn btn-secondary" data-action="reroll"${!canReroll ? ' disabled' : ''}>リロール ${reroll}万円</button>
         <button class="btn btn-primary" data-action="next">次へ</button>
       </div>
       <div class="status-bar">所持金 <b>${run.money}万円</b></div>

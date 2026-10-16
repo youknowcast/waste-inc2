@@ -114,7 +114,7 @@ npm run build   # 型チェック + Vite 本番ビルド（dist/）
 - `src/ui/` — 状態 → HTML 文字列の描画・効果音
 - `src/data/` — 静的データ（52 品目・20 ジョーカー・9 便）
 - 設計: [docs/superpowers/specs/2026-10-16-waste-inc2-design.md](docs/superpowers/specs/2026-10-16-waste-inc2-design.md)
-- `master` への push で GitHub Actions が lint / test / build を実行し、GitHub Pages へ自動デプロイされます
+- `main` への push で GitHub Actions が lint / test / build を実行し、GitHub Pages へ自動デプロイされます
 
 ## クレジット
 

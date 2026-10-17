@@ -8,17 +8,22 @@ import {
 } from '../../game/cards.ts';
 import type { Card } from '../../game/types.ts';
 
-const props = defineProps<{
-  card: Card;
-  selected?: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    card: Card;
+    selected?: boolean;
+    /** 飛行中の見た目だけのカードなど、操作させたくないときに false。 */
+    interactive?: boolean;
+  }>(),
+  { interactive: true },
+);
 </script>
 
 <template>
   <div
     class="hc"
     :style="{ borderColor: SUIT_COLOR[props.card.suit] }"
-    data-action="toggleCard"
+    :data-action="props.interactive ? 'toggleCard' : undefined"
     :data-card="props.card.id"
     :data-selected="props.selected ? 'true' : undefined"
   >

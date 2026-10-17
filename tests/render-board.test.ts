@@ -121,7 +121,7 @@ describe('盤面の描画', () => {
     // <TransitionGroup name="hand"> の enter クラスが付いている＝配る演出が走っている。
     expect(cards[0].classes()).toContain('hand-enter-active');
   });
-  it('搬入の直後は採点の演出（重さ・単価・売上）が走る', async () => {
+  it('搬入の直後は採点の演出（重さ・単価・売上・バー）が走る', async () => {
     const { wrapper, state, send } = await mountAppOnBoard();
     send({ kind: 'toggleCard', cardId: need(state.blind).hand[0].id });
     send({ kind: 'play' });
@@ -131,6 +131,10 @@ describe('盤面の描画', () => {
     );
     expect(wrapper.find('.pf-mult').classes()).toContain('pf-pop-enter-active');
     expect(wrapper.find('.res').classes()).toContain('res-pop-enter-active');
+    expect(wrapper.find('.score-detail').classes()).toContain(
+      'detail-in-enter-active',
+    );
+    expect(wrapper.find('.bar > i').classes()).toContain('bar-enter-active');
   });
   it('採点の演出は搬入のたびに一度だけ。カードを選び直しても再生されない', async () => {
     const { wrapper, state, send } = await mountAppOnBoard();
@@ -141,14 +145,19 @@ describe('盤面の描画', () => {
       'pf-pop-enter-active',
     );
 
-    // 演出が終わるのを待つ。
+    // 演出（採点・配る）が終わるのを待つ。
     await vi.waitFor(() => {
       expect(wrapper.find('.pf-weight').classes()).not.toContain(
         'pf-pop-enter-active',
       );
+      expect(
+        wrapper
+          .findAll('.hand .hc')
+          .every((el) => !el.classes().includes('hand-enter-active')),
+      ).toBe(true);
     });
 
-    // カードを選び直しても採点の演出は再生されない。
+    // カードを選び直しても演出は再生されない（採点・配るの両方）。
     send({ kind: 'toggleCard', cardId: need(state.blind).hand[0].id });
     await nextTick();
     expect(wrapper.find('.pf-weight').classes()).not.toContain(
@@ -156,6 +165,52 @@ describe('盤面の描画', () => {
     );
     expect(wrapper.find('.res').classes()).not.toContain(
       'res-pop-enter-active',
+    );
+    // 配る演出も再生されない（手札は key=id で同一性が保たれる）。
+    expect(wrapper.find('.hand .hc').classes()).not.toContain(
+      'hand-enter-active',
+    );
+  });
+  it('あそびかたを開いて閉じても（再マウントでも）演出は再生されない', async () => {
+    const { wrapper, state, send } = await mountAppOnBoard();
+    send({ kind: 'toggleCard', cardId: need(state.blind).hand[0].id });
+    send({ kind: 'play' });
+    await nextTick();
+    await vi.waitFor(() => {
+      expect(wrapper.find('.pf-weight').classes()).not.toContain(
+        'pf-pop-enter-active',
+      );
+      expect(
+        wrapper
+          .findAll('.hand .hc')
+          .every((el) => !el.classes().includes('hand-enter-active')),
+      ).toBe(true);
+    });
+
+    // あそびかたを開いて閉じる＝盤面が作り直される（App の v-if で再マウント）。
+    send({ kind: 'openRules' });
+    await nextTick();
+    send({ kind: 'closeRules' });
+    await nextTick();
+
+    // 落ち着いた盤面がそのまま出る。演出は再生されない。
+    expect(wrapper.find('.pf-weight').classes()).not.toContain(
+      'pf-pop-enter-active',
+    );
+    expect(wrapper.find('.pf-mult').classes()).not.toContain(
+      'pf-pop-enter-active',
+    );
+    expect(wrapper.find('.res').classes()).not.toContain(
+      'res-pop-enter-active',
+    );
+    expect(wrapper.find('.score-detail').classes()).not.toContain(
+      'detail-in-enter-active',
+    );
+    expect(wrapper.find('.bar > i').classes()).not.toContain(
+      'bar-enter-active',
+    );
+    expect(wrapper.find('.hand .hc').classes()).not.toContain(
+      'hand-enter-active',
     );
   });
   it('2回目の搬入でも採点の演出が再生される', async () => {
@@ -201,8 +256,6 @@ describe('盤面の描画', () => {
       Math.floor((need(app.blind).revenue / need(app.blind).def.goal) * 100),
     );
     expect(bar.style.getPropertyValue('--bar-to')).toBe(`${to}%`);
-    // バーを伸ばす演出（<Transition name="bar">）のクラスが付いている。
-    expect(wrapper.find('.bar > i').classes()).toContain('bar-enter-active');
   });
   it('採点では効いたジョーカーの札だけが光る印を持つ', () => {
     const app = createApp('s');

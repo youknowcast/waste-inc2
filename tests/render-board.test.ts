@@ -5,6 +5,13 @@ import { playHand, startBlind, toggleSelect } from '../src/game/run';
 import { createApp, dispatch } from '../src/ui/app';
 import { renderApp } from '../src/ui/render';
 
+/** `.jc` チップの HTML を名前で引く（jc-fired の有無を調べるため）。 */
+function chipFor(html: string, name: string): string {
+  const chips =
+    html.match(/<div class="jc[^"]*">[\s\S]*?<\/div>\s*<\/div>/g) ?? [];
+  return chips.find((chip) => chip.includes(name)) ?? '';
+}
+
 describe('盤面の描画', () => {
   it('目標金額・品目名・役の呼称・売上が出る', () => {
     const app = createApp('s');
@@ -107,15 +114,33 @@ describe('盤面の描画', () => {
     expect(html).toContain('単価');
     expect(html).toContain('万円');
   });
-  it('採点の演出では目標バーに --bar-from と --bar-to が入る', () => {
+  it('採点の演出では目標バーに --bar-from:0% と現在値の --bar-to が入る', () => {
     const app = createApp('s');
     app.screen = 'board';
     app.blind = startBlind(app.run);
     toggleSelect(app.blind, app.blind.hand[0].id);
     dispatch(app, { kind: 'play' });
     const html = renderApp(app);
-    expect(html).toContain('--bar-from');
-    expect(html).toContain('--bar-to');
+    // 初回の搬入なので採点直前の売上は 0。
+    expect(html).toContain('--bar-from:0%');
+    const to = Math.min(
+      100,
+      Math.floor((app.blind.revenue / app.blind.def.goal) * 100),
+    );
+    expect(html).toContain(`--bar-to:${to}%`);
+  });
+  it('採点では効いたジョーカーの札だけが光る印を持つ', () => {
+    const app = createApp('s');
+    app.screen = 'board';
+    app.blind = startBlind(app.run);
+    // 必ず効く（重さ +30）／3枚以上の汚泥が要るので今回は効かない。
+    app.run.jokers.push({ defId: 'truck-2t', counters: {} });
+    app.run.jokers.push({ defId: 'dehydrator', counters: {} });
+    toggleSelect(app.blind, app.blind.hand[0].id);
+    dispatch(app, { kind: 'play' });
+    const html = renderApp(app);
+    expect(chipFor(html, '2t 軽トラ')).toContain('jc-fired');
+    expect(chipFor(html, '脱水機')).not.toContain('jc-fired');
   });
   it('ユニック車は ×1.25 と表示される（1.3 に丸められない）', () => {
     const app = createApp('s');

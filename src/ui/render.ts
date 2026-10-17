@@ -243,6 +243,18 @@ function renderResult(run: RunState): string {
   `;
 }
 
+/** 採点内訳の先頭 3 行は基礎（役・搬入物・基礎単価）。以降がジョーカー行。 */
+const BASE_SCORE_LINES = 3;
+
+/**
+ * 採点で効いたジョーカーの名前。
+ * 得点に寄与したジョーカーは自分の `name` をジョーカー行の label に積むため、
+ * 内訳のジョーカー行から寄与した集合が復元できる。
+ */
+function firedJokerNames(score: ScoreBreakdown): Set<string> {
+  return new Set(score.lines.slice(BASE_SCORE_LINES).map((line) => line.label));
+}
+
 function renderBoard(
   run: RunState,
   blind: BlindState,
@@ -256,6 +268,10 @@ function renderBoard(
     fx === 'score' && blind.lastScore
       ? blind.revenue - blind.lastScore.revenue
       : null;
+  // 効いたジョーカーの札だけを光らせる。lastScore が無い画面では空集合。
+  const fired = blind.lastScore
+    ? firedJokerNames(blind.lastScore)
+    : new Set<string>();
 
   return `
     <div class="bd">
@@ -280,7 +296,7 @@ function renderBoard(
 
       <div class="foot">
         <div class="jrow">
-          ${renderJokers(run.jokers)}
+          ${renderJokers(run.jokers, fired)}
         </div>
         <div class="btns">
           ${
@@ -301,7 +317,7 @@ function renderQuietStage(): string {
 }
 
 function renderStage(score: ScoreBreakdown): string {
-  const jokerLines = score.lines.slice(3);
+  const jokerLines = score.lines.slice(BASE_SCORE_LINES);
   const handLabel = score.lines[0]?.label ?? '';
   const details = [
     handLabel,
@@ -356,12 +372,16 @@ export function cardHtml(
   `;
 }
 
-function renderJokers(jokers: JokerInstance[]): string {
+function renderJokers(
+  jokers: JokerInstance[],
+  firedNames: ReadonlySet<string> = new Set(),
+): string {
   const slots: string[] = [];
   for (let i = 0; i < MAX_JOKERS; i++) {
     const inst = jokers[i];
     if (inst) {
-      slots.push(jokerHtml(jokerDef(inst.defId), inst));
+      const def = jokerDef(inst.defId);
+      slots.push(jokerHtml(def, inst, firedNames.has(def.name)));
     } else {
       slots.push(`<div class="jc empty"></div>`);
     }
@@ -369,9 +389,14 @@ function renderJokers(jokers: JokerInstance[]): string {
   return slots.join('');
 }
 
-export function jokerHtml(def: JokerDef, _inst: JokerInstance): string {
+export function jokerHtml(
+  def: JokerDef,
+  _inst: JokerInstance,
+  fired = false,
+): string {
+  const firedClass = fired ? ' jc-fired' : '';
   return `
-    <div class="jc">
+    <div class="jc${firedClass}">
       <div class="jn">${def.name}</div>
       <div class="je">${def.text}</div>
     </div>

@@ -2,11 +2,13 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import { BLINDS } from '../src/data/blinds';
+import { jokerDef } from '../src/data/jokers';
 import { RANK_A_MIN, RANK_S_MIN } from '../src/game/constants';
 import { openShop } from '../src/game/shop';
 import { type AppState, createApp, dispatch } from '../src/ui/app';
 import BlindsScreen from '../src/ui/components/BlindsScreen.vue';
 import CashoutScreen from '../src/ui/components/CashoutScreen.vue';
+import ShopScreen from '../src/ui/components/ShopScreen.vue';
 import TitleScreen from '../src/ui/components/TitleScreen.vue';
 import { renderScreenHtml } from '../src/ui/render';
 
@@ -24,6 +26,11 @@ function mountTitle(app: AppState) {
 /** 元請選択だけを描く。 */
 function mountBlinds(app: AppState) {
   return mount(BlindsScreen, { props: { run: app.run } });
+}
+
+/** ショップだけを描く。 */
+function mountShop(app: AppState) {
+  return mount(ShopScreen, { props: { run: app.run, shop: need(app.shop) } });
 }
 
 describe('画面遷移', () => {
@@ -77,10 +84,15 @@ describe('画面遷移', () => {
     dispatch(app, { kind: 'settle' });
     dispatch(app, { kind: 'next' });
     expect(app.screen).toBe('shop');
-    expect(renderScreenHtml(app)).toContain('万円');
-    const shop = app.shop;
-    expect(shop).not.toBeNull();
-    if (!shop) throw new Error('shop is null');
+    const shop = need(app.shop);
+    const wrapper = mountShop(app);
+    expect(wrapper.text()).toContain('万円');
+    // 並んだジョーカーの名前と価格が出る。
+    expect(wrapper.findAll('.offer')).toHaveLength(shop.offers.length);
+    for (const offer of shop.offers) {
+      expect(wrapper.text()).toContain(jokerDef(offer.defId).name);
+      expect(wrapper.text()).toContain(`${offer.price}万円`);
+    }
     const slot = shop.offers.findIndex((o) => o.price > 0);
     expect(slot).toBeGreaterThanOrEqual(0);
     const price = shop.offers[slot].price;
@@ -249,13 +261,12 @@ describe('ショップのリロール', () => {
 
   it('リロール代を払えないときは disabled', () => {
     // リロールは3万円から。
-    expect(renderScreenHtml(shopApp(0))).toContain(
-      'data-action="reroll" disabled',
-    );
+    const reroll = mountShop(shopApp(0)).find('[data-action="reroll"]');
+    expect(reroll.element.hasAttribute('disabled')).toBe(true);
   });
 
   it('リロール代を払えるときは disabled でない', () => {
-    const html = renderScreenHtml(shopApp(999));
-    expect(html).not.toContain('data-action="reroll" disabled');
+    const reroll = mountShop(shopApp(999)).find('[data-action="reroll"]');
+    expect(reroll.element.hasAttribute('disabled')).toBe(false);
   });
 });

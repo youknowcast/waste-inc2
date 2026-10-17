@@ -502,3 +502,219 @@ button:disabled {
   padding: 40px;
   opacity: 0.5;
 }
+
+/* ---- 盤面の演出（配る／採点） ----
+   描画は毎回 innerHTML を差し替えるので、演出は「いま」の描画にだけ付く
+   fx-deal / fx-score クラスを起点に、入った瞬間 1 回だけ走らせる。
+   入力は一切ブロックしない（純粋な CSS アニメーションのみ）。 */
+
+/* 配る: 手札が下から少しずつ入る。配る音（i * 40ms）に合わせてずらす */
+.fx-deal .hand .hc {
+  animation: fx-card-in 0.32s ease-out backwards;
+}
+
+.fx-deal .hand .hc:nth-child(1) {
+  animation-delay: 0ms;
+}
+.fx-deal .hand .hc:nth-child(2) {
+  animation-delay: 40ms;
+}
+.fx-deal .hand .hc:nth-child(3) {
+  animation-delay: 80ms;
+}
+.fx-deal .hand .hc:nth-child(4) {
+  animation-delay: 120ms;
+}
+.fx-deal .hand .hc:nth-child(5) {
+  animation-delay: 160ms;
+}
+.fx-deal .hand .hc:nth-child(6) {
+  animation-delay: 200ms;
+}
+.fx-deal .hand .hc:nth-child(7) {
+  animation-delay: 240ms;
+}
+.fx-deal .hand .hc:nth-child(8) {
+  animation-delay: 280ms;
+}
+.fx-deal .hand .hc:nth-child(9) {
+  animation-delay: 320ms;
+}
+.fx-deal .hand .hc:nth-child(10) {
+  animation-delay: 360ms;
+}
+.fx-deal .hand .hc:nth-child(11) {
+  animation-delay: 400ms;
+}
+.fx-deal .hand .hc:nth-child(12) {
+  animation-delay: 440ms;
+}
+
+@keyframes fx-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.88) rotate(-2deg);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotate(0);
+  }
+}
+
+/* 採点: 重さ（80ms）→ 単価（240ms）→ 売上（400ms）の順に弾ける */
+.fx-score .pf-weight {
+  animation: fx-pop 0.34s ease-out backwards;
+  animation-delay: 80ms;
+}
+
+.fx-score .pf-mult {
+  animation: fx-pop 0.34s ease-out backwards;
+  animation-delay: 240ms;
+}
+
+.fx-score .res {
+  animation: fx-pop-big 0.42s ease-out backwards;
+  animation-delay: 400ms;
+}
+
+@keyframes fx-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.55);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1.18);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes fx-pop-big {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1.35);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* 採点: 効いたジョーカーの札が順に光って戻る */
+.fx-score .jc:not(.empty) {
+  animation: fx-joker 0.7s ease-in-out backwards;
+}
+
+.fx-score .jc:nth-child(2) {
+  animation-delay: 0.12s;
+}
+.fx-score .jc:nth-child(3) {
+  animation-delay: 0.24s;
+}
+.fx-score .jc:nth-child(4) {
+  animation-delay: 0.36s;
+}
+.fx-score .jc:nth-child(5) {
+  animation-delay: 0.48s;
+}
+
+@keyframes fx-joker {
+  0%,
+  15% {
+    background: #241f2e;
+    border-color: #7a6fa0;
+    box-shadow: none;
+  }
+  40%,
+  60% {
+    background: #4a3d10;
+    border-color: #ffd479;
+    box-shadow: 0 0 10px rgba(255, 212, 121, 0.55);
+  }
+  to {
+    background: #241f2e;
+    border-color: #7a6fa0;
+    box-shadow: none;
+  }
+}
+
+/* 採点: 目標バーが採点直前の値から現在値へ伸びる */
+.fx-score .bar > i {
+  animation: fx-bar 0.55s ease-out backwards;
+  animation-delay: 400ms;
+}
+
+@keyframes fx-bar {
+  from {
+    width: var(--bar-from, 0%);
+  }
+  to {
+    width: var(--bar-to, 100%);
+  }
+}
+
+/* 採点: 引き直された手札が採点のあと（700ms〜）から入る */
+.fx-score .hand .hc {
+  animation: fx-card-in 0.32s ease-out backwards;
+}
+
+.fx-score .hand .hc:nth-child(1) {
+  animation-delay: 700ms;
+}
+.fx-score .hand .hc:nth-child(2) {
+  animation-delay: 740ms;
+}
+.fx-score .hand .hc:nth-child(3) {
+  animation-delay: 780ms;
+}
+.fx-score .hand .hc:nth-child(4) {
+  animation-delay: 820ms;
+}
+.fx-score .hand .hc:nth-child(5) {
+  animation-delay: 860ms;
+}
+.fx-score .hand .hc:nth-child(6) {
+  animation-delay: 900ms;
+}
+.fx-score .hand .hc:nth-child(7) {
+  animation-delay: 940ms;
+}
+.fx-score .hand .hc:nth-child(8) {
+  animation-delay: 980ms;
+}
+.fx-score .hand .hc:nth-child(9) {
+  animation-delay: 1020ms;
+}
+.fx-score .hand .hc:nth-child(10) {
+  animation-delay: 1060ms;
+}
+.fx-score .hand .hc:nth-child(11) {
+  animation-delay: 1100ms;
+}
+.fx-score .hand .hc:nth-child(12) {
+  animation-delay: 1140ms;
+}
+
+/* 動きを減らす設定では演出を止める（要素はそのまま表示される）。
+   メディアクエリは特異性を足さないので、後方に置いて同じ特異性で上書きする。 */
+@media (prefers-reduced-motion: reduce) {
+  .fx-deal .hand .hc,
+  .fx-deal .hand .hc:nth-child(n),
+  .fx-score .pf-weight,
+  .fx-score .pf-mult,
+  .fx-score .res,
+  .fx-score .jc,
+  .fx-score .jc:nth-child(n),
+  .fx-score .bar > i,
+  .fx-score .hand .hc,
+  .fx-score .hand .hc:nth-child(n) {
+    animation: none;
+  }
+}

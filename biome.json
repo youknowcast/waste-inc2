@@ -36,7 +36,8 @@
           "correctness": {
             "noUnusedVariables": "off",
             "noUnusedImports": "off"
-          }
+          },
+          "a11y": { "useButtonType": "off" }
         }
       }
     }

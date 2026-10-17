@@ -260,4 +260,17 @@ describe('盤面の描画', () => {
       expect(wrapper.findAll('.fly-card')).toHaveLength(0);
     });
   });
+  it('消えかけの手札（もう手札に無い id）を選んでも無効で、例外にならない', async () => {
+    const { state, send } = await mountAppOnBoard();
+    const playedId = need(state.blind).hand[0].id;
+    send({ kind: 'toggleCard', cardId: playedId });
+    send({ kind: 'play' });
+    await nextTick();
+    // 搬入で消えたカードをもう一度選ぼうとしても無視される。
+    expect(() => send({ kind: 'toggleCard', cardId: playedId })).not.toThrow();
+    await nextTick();
+    expect(need(state.blind).selected).toEqual([]);
+    // そのまま搬入しても例外にならない（選択が空なので何も起きない）。
+    expect(() => send({ kind: 'play' })).not.toThrow();
+  });
 });

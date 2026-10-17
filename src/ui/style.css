@@ -549,6 +549,14 @@ button:disabled {
   transition-delay: calc(var(--i, 0) * 40ms);
 }
 
+/* 搬入で消える手札は即座に流れから外し、当たり判定も消す
+   （代わりに飛行中のカードが採点エリアへ飛ぶ）。 */
+.hand-leave-active {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
 /* 採点: 重さ（80ms）→ 単価（240ms）→ 売上（400ms）の順に弾ける。
    効果音のタイミング（80 / 240 / 400ms）に合わせる。 */
 .pf-pop-enter-from {

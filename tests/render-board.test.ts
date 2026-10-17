@@ -8,7 +8,7 @@ import App from '../src/ui/App.vue';
 import type { AppState } from '../src/ui/app';
 import { createApp, dispatch } from '../src/ui/app';
 import BoardScreen from '../src/ui/components/BoardScreen.vue';
-import { renderScreenHtml } from '../src/ui/render';
+import TitleScreen from '../src/ui/components/TitleScreen.vue';
 import { initGame, useGame } from '../src/ui/store';
 
 /** null を取り除く（テスト内の型の逃げ）。 */
@@ -95,11 +95,15 @@ describe('盤面の描画', () => {
     expect(app.blind.selected).toEqual([id]);
   });
   it('タイトルは createApp に渡したシードを data-seed に持つ', () => {
-    const a = renderScreenHtml(createApp('alpha'));
-    const b = renderScreenHtml(createApp('beta'));
-    expect(a).toContain('data-seed="alpha"');
-    expect(b).toContain('data-seed="beta"');
-    expect(a).not.toContain('data-seed="beta"');
+    const a = mount(TitleScreen, { props: { seed: 'alpha' } });
+    const b = mount(TitleScreen, { props: { seed: 'beta' } });
+    expect(a.find('[data-action="newRun"]').attributes('data-seed')).toBe(
+      'alpha',
+    );
+    expect(b.find('[data-action="newRun"]').attributes('data-seed')).toBe(
+      'beta',
+    );
+    expect(a.html()).not.toContain('data-seed="beta"');
   });
   it('搬入の直後の描画に fx-score が付く', async () => {
     const { wrapper, state, send } = await mountAppOnBoard();

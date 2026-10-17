@@ -32,6 +32,7 @@ import type { ShopState } from '../game/shop.ts';
 import { rerollCost, sellValue } from '../game/shop.ts';
 import type { JokerInstance, Rarity } from '../game/types.ts';
 import type { AppState } from './app.ts';
+import { timeLabel } from './components/labels.ts';
 
 /**
  * HTML に値を差し込む前のエスケープ。
@@ -85,12 +86,6 @@ function renderTitle(app: AppState): string {
       <button class="btn btn-secondary btn-rules" data-action="openRules">あそびかた</button>
     </div>
   `;
-}
-
-export function timeLabel(index: number): string {
-  if (index === 0) return '午前便';
-  if (index === 1) return '午後便';
-  return '締切';
 }
 
 function renderBlinds(run: RunState): string {

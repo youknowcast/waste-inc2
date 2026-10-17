@@ -11,13 +11,12 @@ import type { Card } from '../../game/types.ts';
 const props = defineProps<{
   card: Card;
   selected?: boolean;
-  small?: boolean;
 }>();
 </script>
 
 <template>
   <div
-    :class="{ hc: true, small: props.small }"
+    class="hc"
     :style="{ borderColor: SUIT_COLOR[props.card.suit] }"
     data-action="toggleCard"
     :data-card="props.card.id"

@@ -10,6 +10,11 @@ function need<T>(value: T | null | undefined): T {
   return value;
 }
 
+/** 演出のクラスを見たいので、既定の Transition / TransitionGroup スタブを外す。 */
+const realTransitions = {
+  global: { stubs: { transition: false, 'transition-group': false } },
+};
+
 describe('App のマウント', () => {
   beforeEach(() => {
     initGame('s');
@@ -45,24 +50,26 @@ describe('App のマウント', () => {
     expect(wrapper.find('.help-toggle').exists()).toBe(false);
   });
 
-  it('便を始めると fx-deal が .app-wrap に付く', async () => {
+  it('便を始めると配る演出（手札のトランジション）が走る', async () => {
     const { dispatch } = useGame();
-    const wrapper = mount(App);
+    const wrapper = mount(App, realTransitions);
 
     dispatch({ kind: 'openBlind' });
     await nextTick();
-    expect(wrapper.find('.app-wrap').classes()).toContain('fx-deal');
+    expect(wrapper.find('.hand .hc').classes()).toContain('hand-enter-active');
   });
 
-  it('搬入の直後は fx-score が .app-wrap に付く', async () => {
+  it('搬入の直後は採点の演出が走る', async () => {
     const { state, dispatch } = useGame();
-    const wrapper = mount(App);
+    const wrapper = mount(App, realTransitions);
 
     dispatch({ kind: 'openBlind' });
     await nextTick();
     dispatch({ kind: 'toggleCard', cardId: need(state.blind).hand[0].id });
     dispatch({ kind: 'play' });
     await nextTick();
-    expect(wrapper.find('.app-wrap').classes()).toContain('fx-score');
+    expect(wrapper.find('.pf-weight').classes()).toContain(
+      'pf-pop-enter-active',
+    );
   });
 });

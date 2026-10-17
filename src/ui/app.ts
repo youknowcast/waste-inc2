@@ -25,9 +25,6 @@ export type Screen =
   | 'result'
   | 'rules';
 
-/** いま再生すべき演出の種類。 */
-export type FxKind = 'deal' | 'score';
-
 export type Action =
   | { kind: 'newRun'; seed: string }
   | { kind: 'openBlind' }
@@ -50,8 +47,6 @@ export type AppState = {
   shop: ShopState | null;
   payout: Payout | null;
   soundOn: boolean;
-  /** いま再生すべき演出。dispatch のたびにクリアされる */
-  fx: FxKind | null;
   /** あそびかたを開く直前の画面。「もどる」でここへ帰る */
   returnScreen: Screen | null;
 };
@@ -64,15 +59,11 @@ export function createApp(seed: string): AppState {
     shop: null,
     payout: null,
     soundOn: loadSoundOn(),
-    fx: null,
     returnScreen: null,
   };
 }
 
 export function dispatch(app: AppState, action: Action): void {
-  // 演出は 1 回だけ。ここで毎回クリアしないと、描画のたびに再生され続ける。
-  app.fx = null;
-
   switch (action.kind) {
     case 'newRun': {
       app.run = startRun(action.seed);
@@ -87,7 +78,6 @@ export function dispatch(app: AppState, action: Action): void {
       app.shop = null;
       app.payout = null;
       app.screen = 'board';
-      app.fx = 'deal';
       for (let i = 0; app.blind && i < app.blind.hand.length; i++) {
         setTimeout(() => playSound('deal'), i * 40);
       }
@@ -103,7 +93,6 @@ export function dispatch(app: AppState, action: Action): void {
       if (app.screen !== 'board' || !app.blind) return;
       const score = playHand(app.run, app.blind);
       if (score) {
-        app.fx = 'score';
         setTimeout(() => playSound('scoreWeight'), 80);
         setTimeout(() => playSound('scoreMult'), 240);
         setTimeout(() => playSound('scoreRevenue'), 400);

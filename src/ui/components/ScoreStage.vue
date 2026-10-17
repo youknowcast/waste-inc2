@@ -5,6 +5,8 @@ import { BASE_SCORE_LINES, jokerLineText } from './score-lines.ts';
 
 const props = defineProps<{
   score: ScoreBreakdown | null;
+  /** 搬入のたびに増える連番。key に使って演出を一度だけ再生する。 */
+  seq?: number;
 }>();
 
 /** 内訳の先頭は役の呼称、以降は効いたジョーカーの行（` ／ ` 区切り）。 */
@@ -24,13 +26,26 @@ const detailHtml = computed(() => {
 </script>
 
 <template>
-  <div v-if="props.score" class="stage">
-    <span class="pf pf-weight">重さ {{ props.score.weight }}t</span>
+  <div v-if="props.score" :key="props.seq ?? 0" class="stage">
+    <Transition name="pf-pop" appear>
+      <span class="pf pf-weight">重さ {{ props.score.weight }}t</span>
+    </Transition>
     <span class="op">×</span>
-    <span class="pf pf-mult">単価 {{ props.score.mult }}</span>
+    <Transition name="pf-pop" appear>
+      <span class="pf pf-mult">単価 {{ props.score.mult }}</span>
+    </Transition>
     <span class="op">=</span>
-    <span class="res">{{ props.score.revenue }}万円</span>
+    <Transition name="res-pop" appear>
+      <span class="res">{{ props.score.revenue }}万円</span>
+    </Transition>
   </div>
   <div v-else class="stage quiet"><span>役を作って「搬入」</span></div>
-  <div v-if="props.score" class="score-detail" v-html="detailHtml"></div>
+  <Transition name="detail-in" appear>
+    <div
+      v-if="props.score"
+      :key="props.seq ?? 0"
+      class="score-detail"
+      v-html="detailHtml"
+    ></div>
+  </Transition>
 </template>

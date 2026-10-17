@@ -15,17 +15,20 @@ describe('store', () => {
     expect(state.soundOn).toBe(!before);
   });
 
-  it('dispatch の先頭で fx がクリアされ、次の操作では演出が残らない', () => {
+  it('useGame は同じ state を返し、dispatch の変更がそこに残る', () => {
     const { state, dispatch } = useGame();
 
     dispatch({ kind: 'newRun', seed: 's' });
     dispatch({ kind: 'openBlind' });
-    expect(state.fx).toBe('deal');
+    expect(state.screen).toBe('board');
+    expect(state.blind).not.toBeNull();
 
+    // 続く操作でも blind は保持され、選択だけが更新される（作り直されない）。
+    const blind = state.blind;
     const cardId = state.blind?.hand[0]?.id ?? '';
     dispatch({ kind: 'toggleCard', cardId });
-
-    expect(state.fx).toBeNull();
+    expect(state.blind).toBe(blind);
+    expect(state.blind?.selected).toEqual([cardId]);
   });
 
   it('initGame の前に useGame を呼ぶと例外を投げる', async () => {

@@ -271,3 +271,18 @@ describe('ショップのリロール', () => {
     expect(reroll.element.hasAttribute('disabled')).toBe(false);
   });
 });
+
+describe('ショップの所持ジョーカー', () => {
+  it('所持ジョーカーに売るボタンが付く', () => {
+    const app = createApp('s');
+    app.screen = 'shop';
+    app.shop = openShop(app.run.rng);
+    app.run.money = 999;
+    app.run.jokers.push({ defId: 'truck-8t', counters: {} });
+    const wrapper = mountShop(app);
+    const sell = wrapper.find('[data-action="sell"]');
+    expect(sell.exists()).toBe(true);
+    // 8t 深ダンプはアンコモン（6万円）なので売値は 3万円。
+    expect(sell.text()).toBe('売る 3万円');
+  });
+});

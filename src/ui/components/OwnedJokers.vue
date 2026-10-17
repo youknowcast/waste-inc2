@@ -6,12 +6,13 @@ import type { RunState } from '../../game/run.ts';
 import { sellValue } from '../../game/shop.ts';
 import JokerChip from './JokerChip.vue';
 
-const props = defineProps<{
-  run: RunState;
-  sellable?: boolean;
-}>();
-
-const sellable = computed(() => props.sellable ?? true);
+const props = withDefaults(
+  defineProps<{
+    run: RunState;
+    sellable?: boolean;
+  }>(),
+  { sellable: true },
+);
 
 const entries = computed(() =>
   props.run.jokers.map((j, i) => {
@@ -32,7 +33,7 @@ const entries = computed(() =>
       <div v-for="entry in entries" :key="entry.index" class="owned-joker">
         <JokerChip :def="entry.def" />
         <button
-          v-if="sellable"
+          v-if="props.sellable"
           type="button"
           class="btn btn-secondary"
           data-action="sell"

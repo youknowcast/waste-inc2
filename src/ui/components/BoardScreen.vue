@@ -92,10 +92,10 @@ const jokerSlots = computed(() =>
       </div>
       <div class="btns">
         <template v-if="props.blind.status === 'playing'">
-          <button class="btn btn-primary" data-action="play">搬入</button>
-          <button class="btn btn-secondary" data-action="discard">捨てる</button>
+          <button type="button" class="btn btn-primary" data-action="play">搬入</button>
+          <button type="button" class="btn btn-secondary" data-action="discard">捨てる</button>
         </template>
-        <button v-else class="btn btn-primary" data-action="settle">締める</button>
+        <button type="button" v-else class="btn btn-primary" data-action="settle">締める</button>
       </div>
     </div>
     <div v-if="bossName" class="boss">{{ bossName }}</div>

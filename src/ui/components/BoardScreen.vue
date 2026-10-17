@@ -53,7 +53,6 @@ const flying = ref<Flight[]>([]);
 let nextFlightUid = 0;
 
 const bdRef = ref<HTMLElement | null>(null);
-const handRef = ref<HTMLElement | null>(null);
 
 /** 要素の中心を .bd からの相対座標で返す。 */
 function centerOf(el: Element | null, bd: DOMRect): { x: number; y: number } {
@@ -75,17 +74,19 @@ watch(
     seenScore = score;
     scoreSeq.value++;
 
-    const bd = bdRef.value?.getBoundingClientRect();
-    if (!bd) return;
-    const goal = centerOf(bdRef.value?.querySelector('.stage') ?? null, bd);
+    const root = bdRef.value;
+    const bd = root?.getBoundingClientRect();
+    if (!root || !bd) return;
+    const goal = centerOf(root.querySelector('.stage'), bd);
+    const handEl = root.querySelector<HTMLElement>('.hand');
 
     // 消えるカードがまだ画面に残っている位置を控えておく（無ければ手札の中心へ）。
     const rects = new Map<string, DOMRect>();
-    for (const el of handRef.value?.querySelectorAll<HTMLElement>('.hc') ?? []) {
+    for (const el of handEl?.querySelectorAll<HTMLElement>('.hc') ?? []) {
       const id = el.dataset.card;
       if (id) rects.set(id, el.getBoundingClientRect());
     }
-    const fallback = centerOf(handRef.value, bd);
+    const fallback = centerOf(handEl, bd);
 
     for (const card of oldHand) {
       if (newHand.some((n) => n.id === card.id)) continue;

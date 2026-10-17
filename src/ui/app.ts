@@ -85,6 +85,9 @@ export function dispatch(app: AppState, action: Action): void {
     }
     case 'toggleCard': {
       if (app.screen !== 'board' || !app.blind) return;
+      // 消えかけの手札（DOM 上はまだ残っている）をクリックしても、手札に無い id は
+      // 無視する。UI の防御で、ゲームのルールには触れない。
+      if (!app.blind.hand.some((card) => card.id === action.cardId)) return;
       toggleSelect(app.blind, action.cardId);
       playSound('pick');
       break;

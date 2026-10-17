@@ -13,7 +13,7 @@ export function firedJokerNames(score: ScoreBreakdown): Set<string> {
 }
 
 /** 小数は 2 桁まで見て末尾の 0 を落とす（1.25 → 1.25、1.3 → 1.3）。 */
-export function formatNumber(n: number): string {
+function formatNumber(n: number): string {
   if (Number.isInteger(n)) return String(n);
   return n.toFixed(2).replace(/\.?0+$/, '');
 }

@@ -36,7 +36,7 @@ const offers = computed(() =>
       <div v-for="offer in offers" :key="offer.slot" class="offer">
         <div class="offer-info">
           <div class="jn">{{ offer.def.name }}</div>
-          <div class="je">{{ offer.def.text }}</div>
+          <div class="je" v-html="offer.def.text"></div>
         </div>
         <div class="offer-buy">
           <span class="price">{{ offer.price }}万円</span>

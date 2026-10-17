@@ -16,6 +16,8 @@ const props = defineProps<{
   >
     <template v-if="props.def">
       <div class="jn">{{ props.def.name }}</div>
+      <!-- 効果テキストは <b> 等のマークアップ前提（style.css の .jc .je b）。
+           盤面・ショップ・あそびかたで同じ描画規則にするため v-html で描く。 -->
       <div class="je" v-html="props.def.text"></div>
     </template>
   </div>

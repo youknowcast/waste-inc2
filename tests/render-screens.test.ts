@@ -8,9 +8,9 @@ import { openShop } from '../src/game/shop';
 import { type AppState, createApp, dispatch } from '../src/ui/app';
 import BlindsScreen from '../src/ui/components/BlindsScreen.vue';
 import CashoutScreen from '../src/ui/components/CashoutScreen.vue';
+import ResultScreen from '../src/ui/components/ResultScreen.vue';
 import ShopScreen from '../src/ui/components/ShopScreen.vue';
 import TitleScreen from '../src/ui/components/TitleScreen.vue';
-import { renderScreenHtml } from '../src/ui/render';
 
 /** null を取り除く（テスト内の型の逃げ）。 */
 function need<T>(value: T | null | undefined): T {
@@ -31,6 +31,11 @@ function mountBlinds(app: AppState) {
 /** ショップだけを描く。 */
 function mountShop(app: AppState) {
   return mount(ShopScreen, { props: { run: app.run, shop: need(app.shop) } });
+}
+
+/** リザルトだけを描く。 */
+function mountResult(app: AppState) {
+  return mount(ResultScreen, { props: { run: app.run } });
 }
 
 describe('画面遷移', () => {
@@ -111,7 +116,7 @@ describe('画面遷移', () => {
     blind.status = 'failed';
     dispatch(app, { kind: 'settle' });
     expect(app.screen).toBe('result');
-    expect(renderScreenHtml(app)).toContain('解散');
+    expect(mountResult(app).text()).toContain('解散');
   });
   it('未達でも失敗した便の売上が総売上に入り、所持金は増えない', () => {
     const app = createApp('s');
@@ -127,7 +132,7 @@ describe('画面遷移', () => {
     expect(app.screen).toBe('result');
     expect(app.run.totalRevenue).toBe(123);
     expect(app.run.money).toBe(money);
-    expect(renderScreenHtml(app)).toContain('123');
+    expect(mountResult(app).text()).toContain('123');
   });
 });
 
@@ -143,7 +148,7 @@ describe('リザルトの突破した便', () => {
     app.run.day = 1;
     app.run.blindIndex = 1;
     app.run.result = 'lost';
-    expect(renderScreenHtml(app)).toContain('1／9');
+    expect(mountResult(app).text()).toContain('1／9');
   });
 
   it('3日目締切で敗北すると 8／9 と表示する', () => {
@@ -151,7 +156,7 @@ describe('リザルトの突破した便', () => {
     app.run.day = 3;
     app.run.blindIndex = 2;
     app.run.result = 'lost';
-    expect(renderScreenHtml(app)).toContain('8／9');
+    expect(mountResult(app).text()).toContain('8／9');
   });
 
   it('勝利すると 9／9 と表示する', () => {
@@ -159,7 +164,7 @@ describe('リザルトの突破した便', () => {
     app.run.day = 4;
     app.run.blindIndex = 0;
     app.run.result = 'won';
-    expect(renderScreenHtml(app)).toContain('9／9');
+    expect(mountResult(app).text()).toContain('9／9');
   });
 });
 
@@ -171,32 +176,32 @@ describe('リザルトのランク', () => {
     return app;
   }
 
+  function rankText(totalRevenue: number): string {
+    return mountResult(rankApp(totalRevenue)).find('.result-rank b').text();
+  }
+
   it('RANK_A_MIN 未満は B', () => {
-    expect(renderScreenHtml(rankApp(RANK_A_MIN - 1))).toContain(
-      'ランク <b>B</b>',
-    );
+    expect(rankText(RANK_A_MIN - 1)).toBe('B');
   });
 
   it('RANK_A_MIN ちょうどは A', () => {
-    expect(renderScreenHtml(rankApp(RANK_A_MIN))).toContain('ランク <b>A</b>');
+    expect(rankText(RANK_A_MIN)).toBe('A');
   });
 
   it('目標合計ちょうど（全便を最小限で突破）は A になり B にはならない', () => {
     const goalTotal = BLINDS.reduce((sum, b) => sum + b.goal, 0);
     expect(goalTotal).toBe(RANK_A_MIN);
-    const html = renderScreenHtml(rankApp(goalTotal));
-    expect(html).toContain('ランク <b>A</b>');
-    expect(html).not.toContain('ランク <b>B</b>');
+    const wrapper = mountResult(rankApp(goalTotal));
+    expect(wrapper.find('.result-rank b').text()).toBe('A');
+    expect(wrapper.find('.result-rank').text()).not.toContain('B');
   });
 
   it('RANK_S_MIN 未満は A', () => {
-    expect(renderScreenHtml(rankApp(RANK_S_MIN - 1))).toContain(
-      'ランク <b>A</b>',
-    );
+    expect(rankText(RANK_S_MIN - 1)).toBe('A');
   });
 
   it('RANK_S_MIN ちょうどは S', () => {
-    expect(renderScreenHtml(rankApp(RANK_S_MIN))).toContain('ランク <b>S</b>');
+    expect(rankText(RANK_S_MIN)).toBe('S');
   });
 });
 
@@ -220,22 +225,18 @@ describe('シードのエスケープ', () => {
   });
 
   it('リザルトのシード表示にもマークアップが混ざらない', () => {
-    const app = createApp(evil);
-    app.screen = 'result';
-    const html = renderScreenHtml(app);
-    expect(html).not.toContain('<img src=x onerror=alert(1)>');
-    expect(html).toContain('a&quot;&gt;&lt;img src=x onerror=alert(1)&gt;');
-    const doc = new DOMParser().parseFromString(html, 'text/html');
-    expect(doc.querySelector('img')).toBeNull();
+    const wrapper = mountResult(createApp(evil));
+    // シードはテキストとして出る（マークアップとして解釈されない）。
+    expect(wrapper.find('img').exists()).toBe(false);
+    expect(wrapper.text()).toContain(evil);
   });
 
   it('リザルトの「もう一度」の data-seed もエスケープされる', () => {
-    const app = createApp(evil);
-    app.screen = 'result';
-    const html = renderScreenHtml(app);
-    expect(html).toContain(
-      'data-seed="a&quot;&gt;&lt;img src=x onerror=alert(1)&gt;"',
-    );
+    const wrapper = mountResult(createApp(evil));
+    const again = wrapper.find('[data-action="newRun"]');
+    expect(again.attributes('data-seed')).toBe(evil);
+    // 「"」は属性値の中でエスケープされるので、属性が途中で閉じない。
+    expect(wrapper.html()).toContain('data-seed="a&quot;');
   });
 });
 
@@ -244,9 +245,9 @@ describe('リザルトの所持ジョーカー', () => {
     const app = createApp('s');
     app.screen = 'result';
     app.run.jokers.push({ defId: 'truck-8t', counters: {} });
-    const html = renderScreenHtml(app);
-    expect(html).toContain('8t 深ダンプ');
-    expect(html).not.toContain('data-action="sell"');
+    const wrapper = mountResult(app);
+    expect(wrapper.text()).toContain('8t 深ダンプ');
+    expect(wrapper.find('[data-action="sell"]').exists()).toBe(false);
   });
 });
 

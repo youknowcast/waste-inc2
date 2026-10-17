@@ -5,12 +5,18 @@ import { BLINDS } from '../src/data/blinds';
 import { RANK_A_MIN, RANK_S_MIN } from '../src/game/constants';
 import { openShop } from '../src/game/shop';
 import { type AppState, createApp, dispatch } from '../src/ui/app';
+import BlindsScreen from '../src/ui/components/BlindsScreen.vue';
 import TitleScreen from '../src/ui/components/TitleScreen.vue';
 import { renderScreenHtml } from '../src/ui/render';
 
 /** タイトルだけを描く。文字列関数と同じく「今の状態で描いた結果」を見る。 */
 function mountTitle(app: AppState) {
   return mount(TitleScreen, { props: { seed: app.run.seed } });
+}
+
+/** 元請選択だけを描く。 */
+function mountBlinds(app: AppState) {
+  return mount(BlindsScreen, { props: { run: app.run } });
 }
 
 describe('画面遷移', () => {
@@ -24,11 +30,14 @@ describe('画面遷移', () => {
   it('元請選択に3便と目標金額が並ぶ', () => {
     const app = createApp('s');
     dispatch(app, { kind: 'newRun', seed: 's' });
-    const html = renderScreenHtml(app);
     expect(app.screen).toBe('blinds');
-    expect(html).toContain('午前便');
-    expect(html).toContain('締切');
-    expect(html).toContain('300');
+    const wrapper = mountBlinds(app);
+    const text = wrapper.text();
+    expect(text).toContain('午前便');
+    expect(text).toContain('締切');
+    expect(text).toContain('300');
+    // 3便ぶんの行が並ぶ。
+    expect(wrapper.findAll('.blind-row')).toHaveLength(3);
   });
   it('突破すると精算画面に報酬・手数ボーナス・利息が出る', () => {
     const app = createApp('s');

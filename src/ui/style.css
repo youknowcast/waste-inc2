@@ -608,7 +608,7 @@ button:disabled {
 }
 
 /* 採点: 効いたジョーカーの札が順に光って戻る */
-.fx-score .jc:not(.empty) {
+.fx-score .jc.jc-fired {
   animation: fx-joker 0.7s ease-in-out backwards;
 }
 

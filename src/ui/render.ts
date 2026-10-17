@@ -1,9 +1,7 @@
 import { BLINDS, blindAt, bossLabel, bossText } from '../data/blinds.ts';
 import { ITEMS } from '../data/items.ts';
-import type { JokerDef } from '../data/jokers.ts';
 import { JOKERS, jokerDef } from '../data/jokers.ts';
 import {
-  itemName,
   RANKS,
   rankLabel,
   rankValue,
@@ -29,12 +27,11 @@ import {
 } from '../game/constants.ts';
 import { HAND_LABEL, HAND_TABLE, HAND_TYPES } from '../game/hands.ts';
 import { jokerRerollDiscount, jokerSellBonus } from '../game/jokers.ts';
-import type { BlindState, Payout, RunState } from '../game/run.ts';
-import type { ScoreBreakdown, ScoreLine } from '../game/score.ts';
+import type { Payout, RunState } from '../game/run.ts';
 import type { ShopState } from '../game/shop.ts';
 import { rerollCost, sellValue } from '../game/shop.ts';
-import type { Card, JokerInstance, Rarity } from '../game/types.ts';
-import type { AppState, FxKind } from './app.ts';
+import type { JokerInstance, Rarity } from '../game/types.ts';
+import type { AppState } from './app.ts';
 
 /**
  * HTML に値を差し込む前のエスケープ。
@@ -49,16 +46,11 @@ function escapeHtml(value: string): string {
     .replace(/'/g, '&#39;');
 }
 
-export function renderApp(app: AppState): string {
-  const screenHtml = renderScreen(app);
-  const fxClass = app.fx ? ` fx-${app.fx}` : '';
-  return `
-    <div class="app-wrap${fxClass}">
-      ${renderSoundButton(app)}
-      ${renderHelpButton(app)}
-      ${screenHtml}
-    </div>
-  `;
+/**
+ * 画面の中身だけを返す。ページの殻（`.app-wrap` と右上のボタン）は App.vue が持つ。
+ */
+export function renderScreenHtml(app: AppState): string {
+  return renderScreen(app);
 }
 
 function renderScreen(app: AppState): string {
@@ -68,9 +60,8 @@ function renderScreen(app: AppState): string {
     case 'blinds':
       return renderBlinds(app.run);
     case 'board':
-      return app.blind
-        ? renderBoard(app.run, app.blind, app.fx)
-        : renderTitle(app);
+      // 盤面は BoardScreen.vue が描く。blind が無いときだけタイトルに落とす。
+      return app.blind ? '' : renderTitle(app);
     case 'cashout':
       return app.payout ? renderCashout(app.run, app.payout) : '';
     case 'shop':
@@ -82,17 +73,6 @@ function renderScreen(app: AppState): string {
     default:
       return `<div class="placeholder">${app.screen}（未実装）</div>`;
   }
-}
-
-function renderSoundButton(app: AppState): string {
-  const icon = app.soundOn ? '🔊' : '🔇';
-  return `<button class="sound-toggle" data-action="toggleSound" aria-label="音のON/OFF">${icon}</button>`;
-}
-
-/** あそびかたへの入口。rules 画面では自分自身なので出さない。 */
-function renderHelpButton(app: AppState): string {
-  if (app.screen === 'rules') return '';
-  return `<button class="help-toggle" data-action="openRules" aria-label="あそびかた">？</button>`;
 }
 
 function renderTitle(app: AppState): string {
@@ -107,7 +87,7 @@ function renderTitle(app: AppState): string {
   `;
 }
 
-function timeLabel(index: number): string {
+export function timeLabel(index: number): string {
   if (index === 0) return '午前便';
   if (index === 1) return '午後便';
   return '締切';
@@ -123,7 +103,7 @@ function renderBlinds(run: RunState): string {
       </div>
       <div class="status-bar">
         <span>所持金 <b>${run.money}万円</b></span>
-        <div class="jrow">${renderJokers(run.jokers)}</div>
+        <div class="jrow">${renderBlindsJokers(run.jokers)}</div>
       </div>
       <div class="btns">
         <button class="btn btn-primary" data-action="openBlind">次の便を始める</button>
@@ -270,18 +250,6 @@ function renderResult(run: RunState): string {
       </div>
     </div>
   `;
-}
-
-/** 採点内訳の先頭 3 行は基礎（役・搬入物・基礎単価）。以降がジョーカー行。 */
-const BASE_SCORE_LINES = 3;
-
-/**
- * 採点で効いたジョーカーの名前。
- * 得点に寄与したジョーカーは自分の `name` をジョーカー行の label に積むため、
- * 内訳のジョーカー行から寄与した集合が復元できる。
- */
-function firedJokerNames(score: ScoreBreakdown): Set<string> {
-  return new Set(score.lines.slice(BASE_SCORE_LINES).map((line) => line.label));
 }
 
 /** あそびかたに出すレア度の呼称（表示用）。 */
@@ -465,168 +433,25 @@ function rulesItems(): string {
   );
 }
 
-function renderBoard(
-  run: RunState,
-  blind: BlindState,
-  fx: FxKind | null,
-): string {
-  const def = blind.def;
-  const remaining = Math.max(0, def.goal - blind.revenue);
-  const bossName = def.bossId ? bossLabel(def.bossId) : null;
-  // 採点の演出中だけ、バーを「採点直前の売上」から現在値まで伸ばす。
-  const barFrom =
-    fx === 'score' && blind.lastScore
-      ? blind.revenue - blind.lastScore.revenue
-      : null;
-  // 効いたジョーカーの札だけを光らせる。lastScore が無い画面では空集合。
-  const fired = blind.lastScore
-    ? firedJokerNames(blind.lastScore)
-    : new Set<string>();
-
-  return `
-    <div class="bd">
-      <div class="bd-top">
-        <div>
-          <div class="bd-day">${run.day}日目 ${timeLabel(run.blindIndex)}</div>
-          <div class="bd-meta">残り手札 ${blind.handsLeft} ・ 捨て札 ${blind.discardsLeft}</div>
-        </div>
-        <div class="bd-goal">
-          <div class="l">目標</div>
-          <div class="n">${def.goal}<span>万円</span></div>
-        </div>
-      </div>
-      ${progressBarHtml(blind.revenue, def.goal, barFrom)}
-      <div class="bar-l"><span>売上 ${blind.revenue}万円</span><span>あと ${remaining}万円</span></div>
-
-      ${blind.lastScore ? renderStage(blind.lastScore) : renderQuietStage()}
-
-      <div class="hand">
-        ${blind.hand.map((card) => cardHtml(card, { selected: blind.selected.includes(card.id) })).join('')}
-      </div>
-
-      <div class="foot">
-        <div class="jrow">
-          ${renderJokers(run.jokers, fired)}
-        </div>
-        <div class="btns">
-          ${
-            blind.status === 'playing'
-              ? `<button class="btn btn-primary" data-action="play">搬入</button>
-               <button class="btn btn-secondary" data-action="discard">捨てる</button>`
-              : `<button class="btn btn-primary" data-action="settle">締める</button>`
-          }
-        </div>
-      </div>
-      ${bossName ? `<div class="boss">${bossName}</div>` : ''}
-    </div>
-  `;
-}
-
-function renderQuietStage(): string {
-  return `<div class="stage quiet"><span>役を作って「搬入」</span></div>`;
-}
-
-function renderStage(score: ScoreBreakdown): string {
-  const jokerLines = score.lines.slice(BASE_SCORE_LINES);
-  const handLabel = score.lines[0]?.label ?? '';
-  const details = [
-    handLabel,
-    ...jokerLines.map(
-      (line) => `<span class="hl">${jokerLineHtml(line)}</span>`,
-    ),
-  ];
-
-  return `
-    <div class="stage">
-      <span class="pf pf-weight">重さ ${score.weight}t</span>
-      <span class="op">×</span>
-      <span class="pf pf-mult">単価 ${score.mult}</span>
-      <span class="op">=</span>
-      <span class="res">${score.revenue}万円</span>
-    </div>
-    <div class="score-detail">${details.join(' ／ ')}</div>
-  `;
-}
-
-function jokerLineHtml(line: ScoreLine): string {
-  const value = formatNumber(line.value);
-  switch (line.kind) {
-    case 'weight':
-      return `${line.label} +${value}t`;
-    case 'mult':
-      return `${line.label} +${value}`;
-    case 'xweight':
-      return `${line.label} ×${value}`;
-    case 'xmult':
-      return `${line.label} ×${value}`;
-  }
-}
-
-function formatNumber(n: number): string {
-  if (Number.isInteger(n)) return String(n);
-  return n.toFixed(2).replace(/\.?0+$/, '');
-}
-
-export function cardHtml(
-  card: Card,
-  opts: { selected?: boolean; small?: boolean } = {},
-): string {
-  const selectedAttr = opts.selected ? ' data-selected="true"' : '';
-  const smallClass = opts.small ? ' small' : '';
-  return `
-    <div class="hc${smallClass}" style="border-color:${SUIT_COLOR[card.suit]}" data-action="toggleCard" data-card="${card.id}"${selectedAttr}>
-      <div class="r">${rankLabel(card.rank)}</div>
-      <div class="n">${itemName(card)}</div>
-      <div class="w">${SUIT_MARK[card.suit]} ${rankValue(card.rank)}t</div>
-    </div>
-  `;
-}
-
-function renderJokers(
-  jokers: JokerInstance[],
-  firedNames: ReadonlySet<string> = new Set(),
-): string {
+/**
+ * 元請選択（未移植）のジョーカー枠。
+ * 盤面のジョーカー札は BoardScreen.vue / JokerChip.vue が描くため、ここは blinds 専用。
+ */
+function renderBlindsJokers(jokers: JokerInstance[]): string {
   const slots: string[] = [];
   for (let i = 0; i < MAX_JOKERS; i++) {
     const inst = jokers[i];
     if (inst) {
       const def = jokerDef(inst.defId);
-      slots.push(jokerHtml(def, inst, firedNames.has(def.name)));
+      slots.push(`
+    <div class="jc">
+      <div class="jn">${def.name}</div>
+      <div class="je">${def.text}</div>
+    </div>
+  `);
     } else {
       slots.push(`<div class="jc empty"></div>`);
     }
   }
   return slots.join('');
-}
-
-export function jokerHtml(
-  def: JokerDef,
-  _inst: JokerInstance,
-  fired = false,
-): string {
-  const firedClass = fired ? ' jc-fired' : '';
-  return `
-    <div class="jc${firedClass}">
-      <div class="jn">${def.name}</div>
-      <div class="je">${def.text}</div>
-    </div>
-  `;
-}
-
-export function progressBarHtml(
-  current: number,
-  goal: number,
-  from: number | null = null,
-): string {
-  const pct = percentOf(current, goal);
-  if (from === null) {
-    return `<div class="bar"><i style="width:${pct}%"></i></div>`;
-  }
-  const fromPct = percentOf(from, goal);
-  return `<div class="bar"><i style="width:${pct}%;--bar-from:${fromPct}%;--bar-to:${pct}%"></i></div>`;
-}
-
-function percentOf(value: number, goal: number): number {
-  if (goal <= 0) return 0;
-  return Math.min(100, Math.floor((value / goal) * 100));
 }

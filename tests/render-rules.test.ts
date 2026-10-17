@@ -6,7 +6,7 @@ import { JOKERS } from '../src/data/jokers';
 import { RANKS, rankValue, SUIT_LABEL, SUITS } from '../src/game/cards';
 import { HAND_LABEL, HAND_TABLE, HAND_TYPES } from '../src/game/hands';
 import { actionFromElement, createApp, dispatch } from '../src/ui/app';
-import { renderApp } from '../src/ui/render';
+import { renderScreenHtml } from '../src/ui/render';
 
 function rulesApp() {
   const app = createApp('s');
@@ -46,17 +46,8 @@ describe('あそびかたの導線', () => {
     expect(app.returnScreen).toBeNull();
   });
 
-  it('盤面では「？」ボタンが出て、rules 画面では出ない', () => {
-    const app = createApp('s');
-    dispatch(app, { kind: 'newRun', seed: 's' });
-    dispatch(app, { kind: 'openBlind' });
-    expect(renderApp(app)).toContain('data-action="openRules"');
-    dispatch(app, { kind: 'openRules' });
-    expect(renderApp(app)).not.toContain('data-action="openRules"');
-  });
-
   it('タイトルに「あそびかた」ボタンがある', () => {
-    const doc = parse(renderApp(createApp('s')));
+    const doc = parse(renderScreenHtml(createApp('s')));
     const rulesButton = doc.querySelector('.btn-rules');
     expect(rulesButton).not.toBeNull();
     expect(rulesButton?.textContent?.trim()).toBe('あそびかた');
@@ -79,7 +70,7 @@ describe('あそびかたの導線', () => {
 
 describe('あそびかたの中身', () => {
   it('10役すべての呼称が出る', () => {
-    const html = renderApp(rulesApp());
+    const html = renderScreenHtml(rulesApp());
     expect(HAND_TYPES).toHaveLength(10);
     for (const type of HAND_TYPES) {
       expect(html).toContain(HAND_LABEL[type]);
@@ -87,7 +78,7 @@ describe('あそびかたの中身', () => {
   });
 
   it('各役の基礎の重さと単価が HAND_TABLE の値と一致する', () => {
-    const doc = parse(renderApp(rulesApp()));
+    const doc = parse(renderScreenHtml(rulesApp()));
     for (const type of HAND_TYPES) {
       const row = doc.querySelector(`[data-hand="${type}"]`);
       expect(row).not.toBeNull();
@@ -99,7 +90,7 @@ describe('あそびかたの中身', () => {
   });
 
   it('得点の実例が HAND_TABLE と一致する（重さ = 基礎 + カード）', () => {
-    const doc = parse(renderApp(rulesApp()));
+    const doc = parse(renderScreenHtml(rulesApp()));
     const example = doc.querySelector('.rules-example');
     expect(example).not.toBeNull();
     const base = HAND_TABLE.three.baseWeight;
@@ -115,7 +106,7 @@ describe('あそびかたの中身', () => {
   });
 
   it('20枚すべてのジョーカー名が出る', () => {
-    const html = renderApp(rulesApp());
+    const html = renderScreenHtml(rulesApp());
     expect(JOKERS).toHaveLength(20);
     for (const joker of JOKERS) {
       expect(html).toContain(joker.name);
@@ -123,7 +114,7 @@ describe('あそびかたの中身', () => {
   });
 
   it('3つの元請名とその縛り文が出る', () => {
-    const html = renderApp(rulesApp());
+    const html = renderScreenHtml(rulesApp());
     const bosses = BLINDS.filter((b) => b.index === 2);
     expect(bosses).toHaveLength(3);
     for (const blind of bosses) {
@@ -134,7 +125,7 @@ describe('あそびかたの中身', () => {
   });
 
   it('9便ぶんの目標金額が出る', () => {
-    const doc = parse(renderApp(rulesApp()));
+    const doc = parse(renderScreenHtml(rulesApp()));
     expect(BLINDS).toHaveLength(9);
     for (const blind of BLINDS) {
       const row = doc.querySelector(
@@ -146,7 +137,7 @@ describe('あそびかたの中身', () => {
   });
 
   it('4分類の名前と ITEMS の品目名が出る', () => {
-    const html = renderApp(rulesApp());
+    const html = renderScreenHtml(rulesApp());
     for (const suit of SUITS) {
       expect(html).toContain(SUIT_LABEL[suit]);
       for (const rank of RANKS) {

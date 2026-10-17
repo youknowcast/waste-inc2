@@ -31,6 +31,9 @@ const animating = computed(() => props.from !== null && props.from !== undefined
 
 <template>
   <div class="bar">
-    <i :class="{ 'bar-anim': animating }" :style="barStyle"></i>
+    <Transition v-if="animating" name="bar" appear>
+      <i :style="barStyle"></i>
+    </Transition>
+    <i v-else :style="barStyle"></i>
   </div>
 </template>

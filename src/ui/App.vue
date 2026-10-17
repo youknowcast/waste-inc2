@@ -17,8 +17,8 @@ const screenHtml = computed(() => renderScreenHtml(state));
 
 <template>
   <div class="app-wrap" :class="fxClass">
-    <button type="button" class="sound-toggle" data-action="toggleSound" aria-label="音のON/OFF">{{ state.soundOn ? '🔊' : '🔇' }}</button>
-    <button type="button" v-if="state.screen !== 'rules'" class="help-toggle" data-action="openRules" aria-label="あそびかた">？</button>
+    <button type="button" class="sound-toggle" data-action="toggleSound" aria-label="音のON/OFF" :key="`sound-${tick}`">{{ state.soundOn ? '🔊' : '🔇' }}</button>
+    <button type="button" v-if="state.screen !== 'rules'" class="help-toggle" data-action="openRules" aria-label="あそびかた" :key="`help-${tick}`">？</button>
     <BoardScreen v-if="state.screen === 'board' && state.blind" :key="tick" :run="state.run" :blind="state.blind" :fx="state.fx" />
     <div v-else :key="tick" v-html="screenHtml"></div>
   </div>

@@ -13,8 +13,9 @@ import { useGame } from './store.ts';
 const { state } = useGame();
 
 // 演出は Vue の DOM の同一性に任せる（状態が変わった箇所だけが動く）。
-// 元の「毎回 innerHTML を差し替える」描画単位を再現する tick と、
-// その都合で必要だった右上ボタンの key は撤去した（vue-task-4-report.md §1）。
+// 旧実装は毎回 innerHTML を差し替えて描画していたため、その描画単位を再現する
+// tick と、その都合で必要だった右上ボタンの key を持っていた。Vue 移行で
+// どちらも不要になり撤去済み（vue-task-4-report.md §1。tick はもうコードに無い）。
 
 /**
  * 配る演出は「便が新しく始まったとき」だけ走らせる。

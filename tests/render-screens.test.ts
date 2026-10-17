@@ -6,8 +6,15 @@ import { RANK_A_MIN, RANK_S_MIN } from '../src/game/constants';
 import { openShop } from '../src/game/shop';
 import { type AppState, createApp, dispatch } from '../src/ui/app';
 import BlindsScreen from '../src/ui/components/BlindsScreen.vue';
+import CashoutScreen from '../src/ui/components/CashoutScreen.vue';
 import TitleScreen from '../src/ui/components/TitleScreen.vue';
 import { renderScreenHtml } from '../src/ui/render';
+
+/** null を取り除く（テスト内の型の逃げ）。 */
+function need<T>(value: T | null | undefined): T {
+  if (value === null || value === undefined) throw new Error('unexpected null');
+  return value;
+}
 
 /** タイトルだけを描く。文字列関数と同じく「今の状態で描いた結果」を見る。 */
 function mountTitle(app: AppState) {
@@ -49,10 +56,14 @@ describe('画面遷移', () => {
     blind.revenue = blind.def.goal;
     blind.status = 'cleared';
     dispatch(app, { kind: 'settle' });
-    const html = renderScreenHtml(app);
     expect(app.screen).toBe('cashout');
-    expect(html).toContain('報酬');
-    expect(html).toContain('利息');
+    const wrapper = mount(CashoutScreen, {
+      props: { run: app.run, payout: need(app.payout) },
+    });
+    const text = wrapper.text();
+    expect(text).toContain('報酬');
+    expect(text).toContain('手数ボーナス');
+    expect(text).toContain('利息');
   });
   it('ショップに並ぶジョーカーと価格が出て、買うと所持金が減る', () => {
     const app = createApp('s');

@@ -21,6 +21,7 @@ function need<T>(value: T | null | undefined): T {
 function mountBoard(app: AppState) {
   return mount(BoardScreen, {
     props: { run: app.run, blind: need(app.blind) },
+    global: { stubs: { transition: false, 'transition-group': false } },
   });
 }
 
@@ -183,8 +184,8 @@ describe('盤面の描画', () => {
       Math.floor((need(app.blind).revenue / need(app.blind).def.goal) * 100),
     );
     expect(bar.style.getPropertyValue('--bar-to')).toBe(`${to}%`);
-    // バーを伸ばすアニメーションのクラスが付いている。
-    expect(wrapper.find('.bar > i').classes()).toContain('bar-anim');
+    // バーを伸ばす演出（<Transition name="bar">）のクラスが付いている。
+    expect(wrapper.find('.bar > i').classes()).toContain('bar-enter-active');
   });
   it('採点では効いたジョーカーの札だけが光る印を持つ', () => {
     const app = createApp('s');

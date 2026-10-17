@@ -628,8 +628,9 @@ button:disabled {
   }
 }
 
-/* 採点: 目標バーが採点直前の値から現在値へ伸びる（親が採点のたびに key を変える） */
-.bar > i.bar-anim {
+/* 採点: 目標バーが採点直前の値から現在値へ伸びる。
+   親（ProgressBar）が採点のたびに key を変えて作り直すので、ここは 1 回だけ走る。 */
+.bar-enter-active {
   animation-name: fx-bar;
   animation-duration: 0.55s;
   animation-timing-function: ease-out;
@@ -682,7 +683,7 @@ button:disabled {
   .res-pop-enter-active,
   .detail-in-enter-active,
   .joker-enter-active.jc-fired,
-  .bar > i.bar-anim {
+  .bar-enter-active {
     transition: none;
     animation: none;
   }

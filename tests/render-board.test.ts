@@ -70,6 +70,53 @@ describe('盤面の描画', () => {
     expect(b).toContain('data-seed="beta"');
     expect(a).not.toContain('data-seed="beta"');
   });
+  it('搬入の直後の描画に fx-score が付く', () => {
+    const app = createApp('s');
+    app.screen = 'board';
+    app.blind = startBlind(app.run);
+    toggleSelect(app.blind, app.blind.hand[0].id);
+    dispatch(app, { kind: 'play' });
+    expect(renderApp(app)).toContain('fx-score');
+  });
+  it('演出の次の操作では fx-score も fx-deal も付かない（再生され続けない）', () => {
+    const app = createApp('s');
+    app.screen = 'board';
+    app.blind = startBlind(app.run);
+    toggleSelect(app.blind, app.blind.hand[0].id);
+    dispatch(app, { kind: 'play' });
+    expect(renderApp(app)).toContain('fx-score');
+    dispatch(app, { kind: 'toggleCard', cardId: app.blind.hand[0].id });
+    const html = renderApp(app);
+    expect(html).not.toContain('fx-score');
+    expect(html).not.toContain('fx-deal');
+  });
+  it('便を始めた直後の描画に fx-deal が付く', () => {
+    const app = createApp('s');
+    dispatch(app, { kind: 'openBlind' });
+    expect(renderApp(app)).toContain('fx-deal');
+  });
+  it('fx が無くても採点の数字（重さ・単価・売上）は出ている', () => {
+    const app = createApp('s');
+    app.screen = 'board';
+    app.blind = startBlind(app.run);
+    toggleSelect(app.blind, app.blind.hand[0].id);
+    playHand(app.run, app.blind);
+    const html = renderApp(app);
+    expect(html).not.toContain('fx-score');
+    expect(html).toContain('重さ');
+    expect(html).toContain('単価');
+    expect(html).toContain('万円');
+  });
+  it('採点の演出では目標バーに --bar-from と --bar-to が入る', () => {
+    const app = createApp('s');
+    app.screen = 'board';
+    app.blind = startBlind(app.run);
+    toggleSelect(app.blind, app.blind.hand[0].id);
+    dispatch(app, { kind: 'play' });
+    const html = renderApp(app);
+    expect(html).toContain('--bar-from');
+    expect(html).toContain('--bar-to');
+  });
   it('ユニック車は ×1.25 と表示される（1.3 に丸められない）', () => {
     const app = createApp('s');
     app.screen = 'board';

@@ -233,4 +233,31 @@ describe('盤面の描画', () => {
     expect(detail).toContain('×1.25');
     expect(detail).not.toContain('×1.3');
   });
+  it('搬入すると飛行中のカードが描かれ、演出のあとに消える', async () => {
+    const { wrapper, state, send } = await mountAppOnBoard();
+    expect(wrapper.findAll('.fly-card')).toHaveLength(0);
+    send({ kind: 'toggleCard', cardId: need(state.blind).hand[0].id });
+    send({ kind: 'play' });
+    await nextTick();
+    expect(wrapper.findAll('.fly-card').length).toBeGreaterThan(0);
+    await vi.waitFor(() => {
+      expect(wrapper.findAll('.fly-card')).toHaveLength(0);
+    });
+  });
+  it('素早く2回搬入しても飛行中のカードが壊れない（重複・残留なし）', async () => {
+    const { wrapper, state, send } = await mountAppOnBoard();
+    send({ kind: 'toggleCard', cardId: need(state.blind).hand[0].id });
+    send({ kind: 'play' });
+    await nextTick();
+    send({ kind: 'toggleCard', cardId: need(state.blind).hand[0].id });
+    send({ kind: 'play' });
+    await nextTick();
+    const uids = wrapper
+      .findAll('.fly-card')
+      .map((el) => el.attributes('data-uid'));
+    expect(new Set(uids).size).toBe(uids.length);
+    await vi.waitFor(() => {
+      expect(wrapper.findAll('.fly-card')).toHaveLength(0);
+    });
+  });
 });

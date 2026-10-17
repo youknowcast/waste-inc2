@@ -91,6 +91,7 @@ body {
   padding: 14px;
   max-width: 780px;
   margin: 0 auto 18px;
+  position: relative;
 }
 
 .bd-top {
@@ -637,6 +638,34 @@ button:disabled {
   }
 }
 
+/* 飛ぶ: 搬入したカードが手札から採点エリアへ移動する、見た目だけのオーバーレイ。
+   状態は即座に更新され、この層は入力をブロックしない（pointer-events: none）。 */
+.fly-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.fly-card {
+  position: absolute;
+  transform: translate(-50%, -50%) scale(0.55);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.fly-enter-from {
+  opacity: 1;
+  transform: translate(-50%, -50%)
+    translate(var(--fly-dx, 0px), var(--fly-dy, 0px)) scale(1);
+}
+
+.fly-enter-active {
+  transition:
+    transform 0.42s cubic-bezier(0.22, 0.61, 0.36, 1),
+    opacity 0.42s ease-out;
+}
+
 /* 動きを減らす設定では演出を止めて最終状態を出す。
    メディアクエリは特異性を足さないので、後方に置いて同じ特異性で上書きする。 */
 @media (prefers-reduced-motion: reduce) {
@@ -648,6 +677,17 @@ button:disabled {
   .bar > i.bar-anim {
     transition: none;
     animation: none;
+  }
+
+  /* 飛んでいるカードは出さない（見た目の最終状態＝すでに消えている） */
+  .fly-card,
+  .fly-enter-from {
+    opacity: 0;
+    transform: translate(-50%, -50%);
+  }
+
+  .fly-enter-active {
+    transition: none;
   }
 }
 

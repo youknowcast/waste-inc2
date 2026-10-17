@@ -5,6 +5,7 @@ import { jokerDef } from '../../data/jokers.ts';
 import { MAX_JOKERS } from '../../game/constants.ts';
 import type { BlindState, RunState } from '../../game/run.ts';
 import type { ScoreBreakdown } from '../../game/score.ts';
+import type { Card } from '../../game/types.ts';
 import HandCard from './HandCard.vue';
 import JokerChip from './JokerChip.vue';
 import { timeLabel } from './labels.ts';
@@ -39,19 +40,91 @@ const fired = computed(() =>
  */
 const scoreSeq = ref(0);
 
+/** 飛行中（見た目だけ）のカード。state には一切書き戻さない。 */
+type Flight = {
+  uid: number;
+  card: Card;
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+};
+const flying = ref<Flight[]>([]);
+let nextFlightUid = 0;
+
+const bdRef = ref<HTMLElement | null>(null);
+const handRef = ref<HTMLElement | null>(null);
+
+/** 要素の中心を .bd からの相対座標で返す。 */
+function centerOf(el: Element | null, bd: DOMRect): { x: number; y: number } {
+  const r = el?.getBoundingClientRect();
+  if (!r) return { x: bd.width / 2, y: bd.height / 2 };
+  return { x: r.left + r.width / 2 - bd.left, y: r.top + r.height / 2 - bd.top };
+}
+
 let seenScore: ScoreBreakdown | null = props.blind.lastScore;
 
-// 手札が変わったとき、lastScore も変わっていれば「搬入」とみなして演出を 1 回だけ起こす。
+// 手札が変わったとき、lastScore も変わっていれば「搬入」とみなす。
 // 捨て札・配り直しは lastScore が変わらないので演出しない。
+// flush: 'pre' なので、まだ古い DOM（消える前の手札）から飛び出し位置を測れる。
 watch(
   () => props.blind.hand,
-  () => {
+  (newHand, oldHand) => {
     const score = props.blind.lastScore;
     if (!score || score === seenScore) return;
     seenScore = score;
     scoreSeq.value++;
+
+    const bd = bdRef.value?.getBoundingClientRect();
+    if (!bd) return;
+    const goal = centerOf(bdRef.value?.querySelector('.stage') ?? null, bd);
+
+    // 消えるカードがまだ画面に残っている位置を控えておく（無ければ手札の中心へ）。
+    const rects = new Map<string, DOMRect>();
+    for (const el of handRef.value?.querySelectorAll<HTMLElement>('.hc') ?? []) {
+      const id = el.dataset.card;
+      if (id) rects.set(id, el.getBoundingClientRect());
+    }
+    const fallback = centerOf(handRef.value, bd);
+
+    for (const card of oldHand) {
+      if (newHand.some((n) => n.id === card.id)) continue;
+      const r = rects.get(card.id);
+      const start = r
+        ? { x: r.left + r.width / 2 - bd.left, y: r.top + r.height / 2 - bd.top }
+        : fallback;
+      flying.value.push({
+        uid: nextFlightUid++,
+        card,
+        x0: start.x,
+        y0: start.y,
+        x1: goal.x,
+        y1: goal.y,
+      });
+    }
   },
+  { flush: 'pre' },
 );
+
+/** 飛び終わったカードを外す。入力はブロックしない（トランジションの後始末だけ）。 */
+function removeFlight(uid: number): void {
+  flying.value = flying.value.filter((f) => f.uid !== uid);
+}
+
+function onFlightEntered(el: Element): void {
+  const uid = Number((el as HTMLElement).dataset.uid);
+  if (!Number.isNaN(uid)) removeFlight(uid);
+}
+
+/** 飛び出し位置と着地位置を CSS 変数で渡す（カードごとに独立）。 */
+function flightStyle(f: Flight): Record<string, string> {
+  return {
+    left: `${f.x1}px`,
+    top: `${f.y1}px`,
+    '--fly-dx': `${f.x0 - f.x1}px`,
+    '--fly-dy': `${f.y0 - f.y1}px`,
+  };
+}
 
 // 所持ジョーカーを MAX_JOKERS 枠ぶん並べる（空きは空スロット）。
 // 光った札は搬入ごとに key を変えて作り直し、フラッシュを一度だけ再生する。
@@ -79,7 +152,7 @@ const barFrom = computed(() =>
 </script>
 
 <template>
-  <div class="bd">
+  <div ref="bdRef" class="bd">
     <div class="bd-top">
       <div>
         <div class="bd-day">{{ props.run.day }}日目 {{ timeLabel(props.run.blindIndex) }}</div>
@@ -133,5 +206,22 @@ const barFrom = computed(() =>
       </div>
     </div>
     <div v-if="bossName" class="boss">{{ bossName }}</div>
+
+    <TransitionGroup
+      name="fly"
+      tag="div"
+      class="fly-layer"
+      @after-enter="onFlightEntered"
+    >
+      <div
+        v-for="f in flying"
+        :key="f.uid"
+        class="fly-card"
+        :data-uid="f.uid"
+        :style="flightStyle(f)"
+      >
+        <HandCard :card="f.card" :interactive="false" />
+      </div>
+    </TransitionGroup>
   </div>
 </template>

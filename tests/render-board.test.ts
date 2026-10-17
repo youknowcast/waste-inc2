@@ -173,12 +173,20 @@ describe('盤面の描画', () => {
   });
   it('あそびかたを開いて閉じても（再マウントでも）演出は再生されない', async () => {
     const { wrapper, state, send } = await mountAppOnBoard();
+    // 必ず効くジョーカー（2t 軽トラは重さ +30）を積み、光りの演出も対象にする。
+    state.run.jokers.push({ defId: 'truck-2t', counters: {} });
+    await nextTick();
     send({ kind: 'toggleCard', cardId: need(state.blind).hand[0].id });
     send({ kind: 'play' });
     await nextTick();
+    // 光りの対象が居ることを確かめてから待つ（居なければ以下の検証が空振りする）。
+    expect(wrapper.find('.jc-fired').exists()).toBe(true);
     await vi.waitFor(() => {
       expect(wrapper.find('.pf-weight').classes()).not.toContain(
         'pf-pop-enter-active',
+      );
+      expect(wrapper.find('.jc-fired').classes()).not.toContain(
+        'joker-enter-active',
       );
       expect(
         wrapper
@@ -208,6 +216,10 @@ describe('盤面の描画', () => {
     );
     expect(wrapper.find('.bar > i').classes()).not.toContain(
       'bar-enter-active',
+    );
+    // 効いたジョーカーの光りも再生されない（フラッシュのゲートが効いている）。
+    expect(wrapper.find('.jc-fired').classes()).not.toContain(
+      'joker-enter-active',
     );
     expect(wrapper.find('.hand .hc').classes()).not.toContain(
       'hand-enter-active',

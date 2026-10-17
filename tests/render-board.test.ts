@@ -158,6 +158,23 @@ describe('盤面の描画', () => {
       'res-pop-enter-active',
     );
   });
+  it('2回目の搬入でも採点の演出が再生される', async () => {
+    const { wrapper, state, send } = await mountAppOnBoard();
+    send({ kind: 'toggleCard', cardId: need(state.blind).hand[0].id });
+    send({ kind: 'play' });
+    await nextTick();
+    await vi.waitFor(() => {
+      expect(wrapper.find('.pf-weight').classes()).not.toContain(
+        'pf-pop-enter-active',
+      );
+    });
+    send({ kind: 'toggleCard', cardId: need(state.blind).hand[0].id });
+    send({ kind: 'play' });
+    await nextTick();
+    expect(wrapper.find('.pf-weight').classes()).toContain(
+      'pf-pop-enter-active',
+    );
+  });
   it('採点の数字（重さ・単価・売上）は演出の有無にかかわらず出ている', () => {
     const app = createApp('s');
     app.screen = 'board';

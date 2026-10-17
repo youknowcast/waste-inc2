@@ -166,7 +166,7 @@ const rarityRows = Object.entries(RARITY_PRICE).map(([rarity, price]) => ({
       <div class="rules-jokers">
         <div v-for="joker in JOKERS" :key="joker.id" class="rules-joker">
           <div class="jn">{{ joker.name }}</div>
-          <div class="je">{{ joker.text }}</div>
+          <div class="je" v-html="joker.text"></div>
         </div>
       </div>
     </RulesSection>

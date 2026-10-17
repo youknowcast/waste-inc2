@@ -15,7 +15,7 @@ import type { ScoreBreakdown, ScoreLine } from '../game/score.ts';
 import type { ShopState } from '../game/shop.ts';
 import { rerollCost, sellValue } from '../game/shop.ts';
 import type { Card, JokerInstance } from '../game/types.ts';
-import type { AppState } from './app.ts';
+import type { AppState, FxKind } from './app.ts';
 
 /**
  * HTML に値を差し込む前のエスケープ。
@@ -32,8 +32,9 @@ function escapeHtml(value: string): string {
 
 export function renderApp(app: AppState): string {
   const screenHtml = renderScreen(app);
+  const fxClass = app.fx ? ` fx-${app.fx}` : '';
   return `
-    <div class="app-wrap">
+    <div class="app-wrap${fxClass}">
       ${renderSoundButton(app)}
       ${screenHtml}
     </div>
@@ -47,7 +48,9 @@ function renderScreen(app: AppState): string {
     case 'blinds':
       return renderBlinds(app.run);
     case 'board':
-      return app.blind ? renderBoard(app.run, app.blind) : renderTitle(app);
+      return app.blind
+        ? renderBoard(app.run, app.blind, app.fx)
+        : renderTitle(app);
     case 'cashout':
       return app.payout ? renderCashout(app.run, app.payout) : '';
     case 'shop':
@@ -240,10 +243,19 @@ function renderResult(run: RunState): string {
   `;
 }
 
-function renderBoard(run: RunState, blind: BlindState): string {
+function renderBoard(
+  run: RunState,
+  blind: BlindState,
+  fx: FxKind | null,
+): string {
   const def = blind.def;
   const remaining = Math.max(0, def.goal - blind.revenue);
   const bossName = def.bossId ? bossLabel(def.bossId) : null;
+  // 採点の演出中だけ、バーを「採点直前の売上」から現在値まで伸ばす。
+  const barFrom =
+    fx === 'score' && blind.lastScore
+      ? blind.revenue - blind.lastScore.revenue
+      : null;
 
   return `
     <div class="bd">
@@ -257,7 +269,7 @@ function renderBoard(run: RunState, blind: BlindState): string {
           <div class="n">${def.goal}<span>万円</span></div>
         </div>
       </div>
-      ${progressBarHtml(blind.revenue, def.goal)}
+      ${progressBarHtml(blind.revenue, def.goal, barFrom)}
       <div class="bar-l"><span>売上 ${blind.revenue}万円</span><span>あと ${remaining}万円</span></div>
 
       ${blind.lastScore ? renderStage(blind.lastScore) : renderQuietStage()}
@@ -366,7 +378,20 @@ export function jokerHtml(def: JokerDef, _inst: JokerInstance): string {
   `;
 }
 
-export function progressBarHtml(current: number, goal: number): string {
-  const pct = goal > 0 ? Math.min(100, Math.floor((current / goal) * 100)) : 0;
-  return `<div class="bar"><i style="width:${pct}%"></i></div>`;
+export function progressBarHtml(
+  current: number,
+  goal: number,
+  from: number | null = null,
+): string {
+  const pct = percentOf(current, goal);
+  if (from === null) {
+    return `<div class="bar"><i style="width:${pct}%"></i></div>`;
+  }
+  const fromPct = percentOf(from, goal);
+  return `<div class="bar"><i style="width:${pct}%;--bar-from:${fromPct}%;--bar-to:${pct}%"></i></div>`;
+}
+
+function percentOf(value: number, goal: number): number {
+  if (goal <= 0) return 0;
+  return Math.min(100, Math.floor((value / goal) * 100));
 }

@@ -1,16 +1,25 @@
 // @vitest-environment jsdom
+import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import { BLINDS } from '../src/data/blinds';
 import { RANK_A_MIN, RANK_S_MIN } from '../src/game/constants';
 import { openShop } from '../src/game/shop';
-import { createApp, dispatch } from '../src/ui/app';
+import { type AppState, createApp, dispatch } from '../src/ui/app';
+import TitleScreen from '../src/ui/components/TitleScreen.vue';
 import { renderScreenHtml } from '../src/ui/render';
+
+/** タイトルだけを描く。文字列関数と同じく「今の状態で描いた結果」を見る。 */
+function mountTitle(app: AppState) {
+  return mount(TitleScreen, { props: { seed: app.run.seed } });
+}
 
 describe('画面遷移', () => {
   it('タイトルから始まり、はじめる と シードが出る', () => {
     const app = createApp('s');
     expect(app.screen).toBe('title');
-    expect(renderScreenHtml(app)).toContain('waste-inc2');
+    const wrapper = mountTitle(app);
+    expect(wrapper.text()).toContain('waste-inc2');
+    expect(wrapper.find('[data-action="newRun"]').text()).toBe('はじめる');
   });
   it('元請選択に3便と目標金額が並ぶ', () => {
     const app = createApp('s');
@@ -164,20 +173,18 @@ describe('シードのエスケープ', () => {
   const evil = 'a"><img src=x onerror=alert(1)>';
 
   it('タイトルの data-seed が属性を抜け出さない', () => {
-    const html = renderScreenHtml(createApp(evil));
-    expect(html).not.toContain('<img src=x onerror=alert(1)>');
-    expect(html).not.toContain('data-seed="a"');
-    expect(html).toContain(
-      'data-seed="a&quot;&gt;&lt;img src=x onerror=alert(1)&gt;"',
-    );
+    const wrapper = mountTitle(createApp(evil));
+    // 「"」は属性値の中でエスケープされるので、属性が途中で閉じない。
+    expect(wrapper.html()).toContain('data-seed="a&quot;');
+    expect(wrapper.html()).not.toContain('data-seed="a"');
+    // マークアップとして解釈される <img> は存在しない。
+    expect(wrapper.find('img').exists()).toBe(false);
   });
 
   it('エスケープしても dataset から元のシードが読める', () => {
-    const html = renderScreenHtml(createApp(evil));
-    const doc = new DOMParser().parseFromString(html, 'text/html');
-    expect(doc.querySelector('img')).toBeNull();
-    const button = doc.querySelector('[data-action="newRun"]');
-    expect(button?.getAttribute('data-seed')).toBe(evil);
+    const wrapper = mountTitle(createApp(evil));
+    const button = wrapper.find('[data-action="newRun"]');
+    expect(button.attributes('data-seed')).toBe(evil);
   });
 
   it('リザルトのシード表示にもマークアップが混ざらない', () => {

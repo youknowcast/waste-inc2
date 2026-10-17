@@ -5,6 +5,8 @@ const props = defineProps<{
   current: number;
   goal: number;
   from?: number | null;
+  /** この盤面をマウントしてから搬入が起きたか。再マウントでは false。 */
+  live?: boolean;
 }>();
 
 function percentOf(value: number, goal: number): number {
@@ -31,7 +33,7 @@ const animating = computed(() => props.from !== null && props.from !== undefined
 
 <template>
   <div class="bar">
-    <Transition v-if="animating" name="bar" appear>
+    <Transition v-if="animating" name="bar" :appear="props.live">
       <i :style="barStyle"></i>
     </Transition>
     <i v-else :style="barStyle"></i>

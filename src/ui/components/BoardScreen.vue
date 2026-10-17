@@ -13,10 +13,15 @@ import ProgressBar from './ProgressBar.vue';
 import ScoreStage from './ScoreStage.vue';
 import { firedJokerNames } from './score-lines.ts';
 
-const props = defineProps<{
-  run: RunState;
-  blind: BlindState;
-}>();
+const props = withDefaults(
+  defineProps<{
+    run: RunState;
+    blind: BlindState;
+    /** 配る演出を出すか。便が新しく始まったときだけ true（再マウントでは false）。 */
+    dealAppear?: boolean;
+  }>(),
+  { dealAppear: true },
+);
 
 const remaining = computed(() =>
   Math.max(0, props.blind.def.goal - props.blind.revenue),
@@ -39,6 +44,14 @@ const fired = computed(() =>
  * 搬入のたびに一度だけ再生される。カードを選び直しても増えない。
  */
 const scoreSeq = ref(0);
+
+/**
+ * 「この盤面をマウントしてから搬入が起きたか」。
+ * 採点・ジョーカー・バーの演出の `appear` に使う。盤面があそびかたの開閉で
+ * 作り直されても（lastScore が残っていても）live は false のままなので、
+ * 再マウントでは落ち着いた状態が出る。本物の搬入でだけ true になる。
+ */
+const live = computed(() => scoreSeq.value > 0);
 
 /** 飛行中（見た目だけ）のカード。state には一切書き戻さない。 */
 type Flight = {
@@ -169,15 +182,21 @@ const barFrom = computed(() =>
       :current="props.blind.revenue"
       :goal="props.blind.def.goal"
       :from="barFrom"
+      :live="live"
     />
     <div class="bar-l">
       <span>売上 {{ props.blind.revenue }}万円</span>
       <span>あと {{ remaining }}万円</span>
     </div>
 
-    <ScoreStage :score="props.blind.lastScore" :seq="scoreSeq" />
+    <ScoreStage :score="props.blind.lastScore" :seq="scoreSeq" :live="live" />
 
-    <TransitionGroup name="hand" tag="div" class="hand" appear>
+    <TransitionGroup
+      name="hand"
+      tag="div"
+      class="hand"
+      :appear="props.dealAppear"
+    >
       <HandCard
         v-for="(card, i) in props.blind.hand"
         :key="card.id"
@@ -193,7 +212,7 @@ const barFrom = computed(() =>
           v-for="slot in jokerSlots"
           :key="slot.key"
           name="joker"
-          appear
+          :appear="live"
         >
           <JokerChip :def="slot.def" :fired="slot.fired" :index="slot.index" />
         </Transition>
